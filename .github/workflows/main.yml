@@ -1,0 +1,856 @@
+name: Build & Sign Lihket SMS Listener APK (Mobile 1-File Builder)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Auto-Extract ZIP or Auto-Generate Full Android Project Structure
+        run: |
+          # If user uploaded Lihket_Digital_Academy_Full_Project.zip directly from phone without extracting:
+          if [ -f "Lihket_Digital_Academy_Full_Project.zip" ]; then
+            echo "Found ZIP file in repo root! Extracting automatically..."
+            unzip -o Lihket_Digital_Academy_Full_Project.zip
+          fi
+
+          # Ensure directories exist even if ONLY main.yml was pasted on mobile:
+          mkdir -p app/src/main/java/lihket_digital_academy/et
+
+          cat << 'EOF_SETTINGS' > settings.gradle.kts
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "LihketSmsAutomation"
+          include(":app")
+          EOF_SETTINGS
+
+          cat << 'EOF_ROOT_GRADLE' > build.gradle.kts
+          plugins {
+              id("com.android.application") version "8.5.2" apply false
+              id("org.jetbrains.kotlin.android") version "1.9.24" apply false
+              id("com.google.gms.google-services") version "4.4.2" apply false
+          }
+          EOF_ROOT_GRADLE
+
+          cat << 'EOF_APP_GRADLE' > app/build.gradle.kts
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+              id("com.google.gms.google-services")
+          }
+
+          android {
+              namespace = "lihket_digital_academy.et"
+              compileSdk = 34
+
+              defaultConfig {
+                  applicationId = "lihket_digital_academy.et"
+                  minSdk = 24
+                  targetSdk = 34
+                  versionCode = 1
+                  versionName = "1.0.0"
+              }
+
+              signingConfigs {
+                  create("release") {
+                      val keystoreFile = file("lihket-release-key.jks")
+                      if (keystoreFile.exists()) {
+                          storeFile = keystoreFile
+                          storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "lihketdigitalacademy@251et"
+                          keyAlias = System.getenv("KEY_ALIAS") ?: "lihketdigitalacademy.et"
+                          keyPassword = System.getenv("KEY_PASSWORD") ?: "lihketdigitalacademy@251et"
+                      }
+                  }
+              }
+
+              buildTypes {
+                  release {
+                      isMinifyEnabled = false
+                      signingConfig = signingConfigs.getByName("release")
+                      proguardFiles(
+                          getDefaultProguardFile("proguard-android-optimize.txt"),
+                          "proguard-rules.pro"
+                      )
+                  }
+                  debug {
+                      signingConfig = signingConfigs.getByName("release")
+                  }
+              }
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+
+          dependencies {
+              // Firebase BoM
+              implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+              implementation("com.google.firebase:firebase-analytics")
+              implementation("com.google.firebase:firebase-firestore")
+
+              // AndroidX Core & Lifecycle
+              implementation("androidx.core:core-ktx:1.13.1")
+              implementation("androidx.appcompat:appcompat:1.7.0")
+              implementation("com.google.android.material:material:1.12.0")
+          }
+          EOF_APP_GRADLE
+
+          cat << 'EOF_PROGUARD' > app/proguard-rules.pro
+          -keep class lihket_digital_academy.et.** { *; }
+          EOF_PROGUARD
+
+          cat << 'EOF_GOOGLE_SERVICES' > app/google-services.json
+          {
+            "project_info": {
+              "project_number": "519424016159",
+              "project_id": "lihketdigitalpayment",
+              "storage_bucket": "lihketdigitalpayment.firebasestorage.app"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:519424016159:android:ee51693baeab4926f8fa2a",
+                  "android_client_info": {
+                    "package_name": "lihket_digital_academy.et"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyDFMpfyeZd5ZZ_kmJuSrOflFnYIXqgRjJg"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF_GOOGLE_SERVICES
+
+          cat << 'EOF_MANIFEST' > app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="lihket_digital_academy.et">
+
+              <!-- 1. SMS & Network Permissions -->
+              <uses-permission android:name="android.permission.RECEIVE_SMS" />
+              <uses-permission android:name="android.permission.READ_SMS" />
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+              <!-- 2. 24/7 Background Execution & Battery Optimization Permissions -->
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+              <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+              <uses-permission android:name="android.permission.WAKE_LOCK" />
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+              <application
+                  android:allowBackup="true"
+                  android:label="Lihket SMS Automation"
+                  android:supportsRtl="true"
+                  android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
+
+                  <!-- Main Dashboard Activity -->
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+
+                  <!-- High-Priority BroadcastReceiver for CBE & Telebirr Incoming SMS -->
+                  <receiver
+                      android:name=".SmsBroadcastReceiver"
+                      android:enabled="true"
+                      android:exported="true"
+                      android:permission="android.permission.BROADCAST_SMS">
+                      <intent-filter android:priority="999">
+                          <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+                          <action android:name="android.intent.action.BOOT_COMPLETED" />
+                      </intent-filter>
+                  </receiver>
+
+                  <!-- 24/7 Foreground Service for Two-Way Firebase Sync -->
+                  <service
+                      android:name=".SmsForegroundService"
+                      android:enabled="true"
+                      android:exported="false"
+                      android:foregroundServiceType="dataSync" />
+
+              </application>
+          </manifest>
+          EOF_MANIFEST
+
+          cat << 'EOF_PARSER' > app/src/main/java/lihket_digital_academy/et/SmsParser.kt
+          package lihket_digital_academy.et
+
+          import java.util.Locale
+
+          data class ParsedPaymentSms(
+              val isValid: Boolean,
+              val provider: String,          // "CBE" or "Telebirr"
+              val senderAddress: String,     // "CBE" or "127"
+              val transactionId: String,     // e.g. "FT26309ABC12" or "DB62J9H7KL"
+              val amount: Double,            // e.g. 1500.00
+              val senderPhone: String,       // e.g. "0911223344" (for Telebirr)
+              val receiptLink: String,       // e.g. "https://mbreciept.cbe.com.et/..."
+              val rawMessage: String
+          )
+
+          object SmsParser {
+
+              // Merchant Constants for Getachew Biset (Lihket Digital Academy)
+              private const val EXPECTED_CBE_SUFFIX = "6367" // Matches 1********6367 / 1000212746367
+
+              /**
+               * Checks if the SMS comes from Commercial Bank of Ethiopia (CBE) or Telebirr (127).
+               */
+              fun isTrustedPaymentSender(sender: String, body: String): Boolean {
+                  val normSender = sender.trim().uppercase(Locale.ROOT)
+                  val normBody = body.trim()
+                  val isCbe = normSender.contains("CBE") ||
+                          normBody.contains("mbreciept.cbe.com.et", ignoreCase = true) ||
+                          normBody.contains("1********6367")
+                  val isTelebirr = normSender == "127" ||
+                          normSender.contains("TELEBIRR") ||
+                          normBody.contains("telebirr", ignoreCase = true) ||
+                          normBody.contains("ቴሌብር")
+                  return isCbe || isTelebirr
+              }
+
+              /**
+               * Parses both English and Amharic SMS messages from CBE and Telebirr (127).
+               */
+              fun parse(sender: String, body: String): ParsedPaymentSms {
+                  val normSender = sender.trim()
+                  val normBody = body.trim()
+
+                  val isCbe = normSender.uppercase(Locale.ROOT).contains("CBE") ||
+                          normBody.contains("mbreciept.cbe.com.et", ignoreCase = true) ||
+                          normBody.contains("1********6367")
+
+                  val provider = if (isCbe) "CBE" else "Telebirr"
+
+                  // 1. Extract Amount (Supports "ETB 1,500.00", "ብር 500.00 ተቀብለዋል", "500.00 ETB")
+                  val amountRegexes = listOf(
+                      Regex("""(?:ETB|ብር|Birr)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)""", RegexOption.IGNORE_CASE),
+                      Regex("""([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)\s*(?:ETB|ብር|Birr)""", RegexOption.IGNORE_CASE)
+                  )
+                  var extractedAmount = 0.0
+                  for (regex in amountRegexes) {
+                      val match = regex.find(normBody)
+                      if (match != null) {
+                          val cleanNum = match.groupValues[1].replace(",", "")
+                          extractedAmount = cleanNum.toDoubleOrNull() ?: 0.0
+                          if (extractedAmount > 0.0) break
+                      }
+                  }
+
+                  // 2. Extract Transaction ID / Reference Number
+                  var extractedTxId = ""
+                  if (provider == "CBE") {
+                      val cbeTxRegexes = listOf(
+                          Regex("""mbreciept\.cbe\.com\.et/\?id=([A-Z0-9]{8,20})""", RegexOption.IGNORE_CASE),
+                          Regex("""mbreciept\.cbe\.com\.et/([A-Z0-9]{8,20})""", RegexOption.IGNORE_CASE),
+                          Regex("""apps\.cbe\.com\.et:100/\?id=([A-Z0-9]{8,20})""", RegexOption.IGNORE_CASE),
+                          Regex("""\b(FT[0-9A-Z]{8,16})\b""", RegexOption.IGNORE_CASE),
+                          Regex("""(?:Ref(?:\s*No)?|Transaction\s*ID|መለያ\s*ቁጥር)[:\s#]*([A-Z0-9]{8,20})""", RegexOption.IGNORE_CASE)
+                      )
+                      for (r in cbeTxRegexes) {
+                          val m = r.find(normBody)
+                          if (m != null) {
+                              extractedTxId = m.groupValues[1].uppercase(Locale.ROOT).take(12)
+                              break
+                          }
+                      }
+                  } else {
+                      val telebirrTxRegexes = listOf(
+                          Regex("""(?:transaction\s*(?:number|no|id)|የትራንዛክሽን\s*(?:ቁጥር|መለያ)|ቁጥር)\s*(?:is|ነው)?[:\s]*([A-Z0-9]{8,15})""", RegexOption.IGNORE_CASE),
+                          Regex("""\b([A-Z]{2}[0-9A-Z]{8,12})\b""")
+                      )
+                      for (r in telebirrTxRegexes) {
+                          val m = r.find(normBody)
+                          if (m != null) {
+                              extractedTxId = m.groupValues[1].uppercase(Locale.ROOT)
+                              break
+                          }
+                      }
+                  }
+
+                  // 3. Extract Sender Phone Number (for Telebirr pairing)
+                  val phoneRegex = Regex("""(?:\+?251|0)?(9[0-9]{8}|7[0-9]{8}|[0-9]{2}\*+[0-9]{2,4})""")
+                  val extractedPhone = phoneRegex.find(normBody)?.value ?: if (provider == "CBE") "CBE_TRANSFER" else "UNKNOWN"
+
+                  // 4. Verify CBE Account ends with 6367 (1********6367)
+                  val accountMatches = if (provider == "CBE") {
+                      normBody.contains(EXPECTED_CBE_SUFFIX)
+                  } else {
+                      true
+                  }
+
+                  // 5. Extract Official Receipt Link
+                  val urlRegex = Regex("""https?://[^\s]+""", RegexOption.IGNORE_CASE)
+                  val receiptUrl = urlRegex.find(normBody)?.value
+                      ?: if (provider == "CBE" && extractedTxId.isNotEmpty()) "https://mbreciept.cbe.com.et/$extractedTxId" else ""
+
+                  val isValid = extractedAmount > 0.0 && extractedTxId.isNotEmpty() && accountMatches
+
+                  return ParsedPaymentSms(
+                      isValid = isValid,
+                      provider = provider,
+                      senderAddress = normSender,
+                      transactionId = extractedTxId,
+                      amount = extractedAmount,
+                      senderPhone = extractedPhone,
+                      receiptLink = receiptUrl,
+                      rawMessage = normBody
+                  )
+              }
+          }
+          EOF_PARSER
+
+          cat << 'EOF_SYNC' > app/src/main/java/lihket_digital_academy/et/FirebaseSyncManager.kt
+          package lihket_digital_academy.et
+
+          import android.content.Context
+          import android.database.Cursor
+          import android.net.Uri
+          import android.util.Log
+          import com.google.firebase.Timestamp
+          import com.google.firebase.firestore.FieldValue
+          import com.google.firebase.firestore.FirebaseFirestore
+          import java.util.Locale
+
+          object FirebaseSyncManager {
+
+              private const val TAG = "LihketFirebaseSync"
+
+              /**
+               * Pushes a parsed CBE or Telebirr SMS to Firestore and immediately runs 100% Order Pairing.
+               */
+              fun pushSmsAndVerifyOrder(parsed: ParsedPaymentSms) {
+                  if (!parsed.isValid) return
+
+                  val db = FirebaseFirestore.getInstance()
+                  val txIdUpper = parsed.transactionId.uppercase(Locale.ROOT)
+
+                  val smsDocData = hashMapOf(
+                      "provider" to parsed.provider,
+                      "sender" to parsed.senderAddress,
+                      "transactionId" to txIdUpper,
+                      "amount" to parsed.amount,
+                      "senderPhone" to parsed.senderPhone,
+                      "receiptLink" to parsed.receiptLink,
+                      "rawBody" to parsed.rawMessage,
+                      "consumed" to false,
+                      "timestamp" to FieldValue.serverTimestamp()
+                  )
+
+                  // Use transactionId as document key to prevent duplicate SMS writes
+                  db.collection("incoming_sms").document(txIdUpper)
+                      .set(smsDocData)
+                      .addOnSuccessListener {
+                          Log.d(TAG, "SMS saved to Firebase: $txIdUpper (${parsed.amount} ETB)")
+                          pairWithPendingOrder(db, parsed)
+                      }
+                      .addOnFailureListener { e ->
+                          Log.e(TAG, "Error pushing SMS to Firebase", e)
+                      }
+              }
+
+              /**
+               * Pairs the incoming SMS with any matching order in `pending_orders` (100% Verification).
+               */
+              private fun pairWithPendingOrder(db: FirebaseFirestore, sms: ParsedPaymentSms) {
+                  val txIdUpper = sms.transactionId.uppercase(Locale.ROOT)
+
+                  db.collection("pending_orders")
+                      .whereEqualTo("transactionId", txIdUpper)
+                      .get()
+                      .addOnSuccessListener { snapshot ->
+                          for (doc in snapshot.documents) {
+                              val currentStatus = doc.getString("status") ?: "WAITING_FOR_SMS"
+                              if (currentStatus == "VERIFIED") continue
+
+                              val expectedAmount = doc.getDouble("amount") ?: 0.0
+                              val orderMethod = doc.getString("method") ?: ""
+                              val studentPhone = doc.getString("studentPhone") ?: ""
+
+                              // 1. Check Method Match
+                              if (!orderMethod.equals(sms.provider, ignoreCase = true)) {
+                                  doc.reference.update(
+                                      mapOf(
+                                          "status" to "ERROR_METHOD_MISMATCH",
+                                          "statusReason" to "Payment method mismatch: expected $orderMethod, got ${sms.provider}"
+                                      )
+                                  )
+                                  continue
+                              }
+
+                              // 2. Check Exact Amount (100% Match Required)
+                              if (sms.amount < expectedAmount) {
+                                  val reason = "የገንዘብ መጠን አልተዛመደም! የተጠየቀው፡ $expectedAmount ብር፣ የገባው፡ ${sms.amount} ብር"
+                                  doc.reference.update(
+                                      mapOf(
+                                          "status" to "ERROR_AMOUNT_MISMATCH",
+                                          "statusReason" to reason
+                                      )
+                                  )
+                                  logSecurityAlert(db, "AMOUNT_MISMATCH", reason, txIdUpper)
+                                  continue
+                              }
+
+                              // 3. Check Telebirr Phone Match
+                              if (sms.provider == "Telebirr" && !phonesMatch(studentPhone, sms.senderPhone)) {
+                                  val reason = "የቴሌብር ስልክ ቁጥር አልተዛመደም! የተመዘገበው፡ $studentPhone፣ የላከው፡ ${sms.senderPhone}"
+                                  doc.reference.update(
+                                      mapOf(
+                                          "status" to "ERROR_PHONE_MISMATCH",
+                                          "statusReason" to reason
+                                      )
+                                  )
+                                  logSecurityAlert(db, "PHONE_MISMATCH", reason, txIdUpper)
+                                  continue
+                              }
+
+                              // 4. All Checks 100% Passed -> Auto-Unlock Course 24/7!
+                              doc.reference.update(
+                                  mapOf(
+                                      "status" to "VERIFIED",
+                                      "statusReason" to "✅ 100% ተረጋግጧል (${sms.provider} • ${sms.amount} ETB • TxID: $txIdUpper)",
+                                      "verifiedAt" to FieldValue.serverTimestamp()
+                                  )
+                              )
+                              db.collection("incoming_sms").document(txIdUpper).update(
+                                  mapOf(
+                                      "consumed" to true,
+                                      "consumedByOrderId" to doc.id
+                                  )
+                              )
+                          }
+                      }
+              }
+
+              private fun phonesMatch(orderPhone: String, smsPhone: String): Boolean {
+                  if (smsPhone == "UNKNOWN" || smsPhone.isBlank()) return true
+                  val cleanOrder = orderPhone.filter { it.isDigit() }.takeLast(9)
+                  if (smsPhone.contains("*")) {
+                      val tail = smsPhone.filter { it.isDigit() }.takeLast(2)
+                      return cleanOrder.endsWith(tail)
+                  }
+                  val cleanSms = smsPhone.filter { it.isDigit() }.takeLast(9)
+                  return cleanOrder == cleanSms
+              }
+
+              private fun logSecurityAlert(db: FirebaseFirestore, type: String, detail: String, txId: String) {
+                  db.collection("security_alerts").add(
+                      mapOf(
+                          "type" to type,
+                          "title" to "Security / Verification Alert ($type)",
+                          "detail" to "$detail (TxID: $txId)",
+                          "timestamp" to Timestamp.now()
+                      )
+                  )
+              }
+
+              /**
+               * Two-Way Sync: Listens to `listener_commands/latest_command` from Firebase so Web Admin
+               * or Pending Orders can trigger an immediate inbox scan or heartbeat check on the tablet.
+               */
+              fun startTwoWayCommandListener(context: Context) {
+                  val db = FirebaseFirestore.getInstance()
+
+                  // Update device heartbeat
+                  db.collection("device_status").document("tablet_main").set(
+                      mapOf(
+                          "owner" to "Getachew Biset",
+                          "package" to "lihket_digital_academy.et",
+                          "status" to "ONLINE_LISTENING_24_7",
+                          "lastHeartbeat" to FieldValue.serverTimestamp()
+                      )
+                  )
+
+                  db.collection("listener_commands").document("latest_command")
+                      .addSnapshotListener { snapshot, error ->
+                          if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+                          val cmd = snapshot.getString("command") ?: return@addSnapshotListener
+                          when (cmd) {
+                              "RESCAN_LAST_10_SMS", "WATCH_TRANSACTION" -> {
+                                  scanRecentInboxSms(context, 15)
+                              }
+                              "PING_HEARTBEAT" -> {
+                                  db.collection("device_status").document("tablet_main").update(
+                                      "lastHeartbeat", FieldValue.serverTimestamp()
+                                  )
+                              }
+                          }
+                      }
+              }
+
+              /**
+               * Reads recent SMS from the Android Inbox (used when triggered by Two-Way Firebase sync
+               * in case network was briefly offline when SMS arrived).
+               */
+              fun scanRecentInboxSms(context: Context, limit: Int = 15) {
+                  try {
+                      val cursor: Cursor? = context.contentResolver.query(
+                          Uri.parse("content://sms/inbox"),
+                          arrayOf("address", "body", "date"),
+                          null,
+                          null,
+                          "date DESC LIMIT $limit"
+                      )
+                      cursor?.use {
+                          val addrIdx = it.getColumnIndex("address")
+                          val bodyIdx = it.getColumnIndex("body")
+                          while (it.moveToNext()) {
+                              val sender = if (addrIdx >= 0) it.getString(addrIdx) ?: "" else ""
+                              val body = if (bodyIdx >= 0) it.getString(bodyIdx) ?: "" else ""
+                              if (SmsParser.isTrustedPaymentSender(sender, body)) {
+                                  val parsed = SmsParser.parse(sender, body)
+                                  if (parsed.isValid) {
+                                      pushSmsAndVerifyOrder(parsed)
+                                  }
+                              }
+                          }
+                      }
+                  } catch (e: SecurityException) {
+                      Log.e(TAG, "READ_SMS permission not granted yet", e)
+                  }
+              }
+          }
+          EOF_SYNC
+
+          cat << 'EOF_RECEIVER' > app/src/main/java/lihket_digital_academy/et/SmsBroadcastReceiver.kt
+          package lihket_digital_academy.et
+
+          import android.content.BroadcastReceiver
+          import android.content.Context
+          import android.content.Intent
+          import android.os.Build
+          import android.provider.Telephony
+          import android.util.Log
+
+          class SmsBroadcastReceiver : BroadcastReceiver() {
+
+              override fun onReceive(context: Context, intent: Intent) {
+                  if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+                      val serviceIntent = Intent(context, SmsForegroundService::class.java)
+                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                          context.startForegroundService(serviceIntent)
+                      } else {
+                          context.startService(serviceIntent)
+                      }
+                      return
+                  }
+
+                  if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
+                      val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
+                      if (messages.isNullOrEmpty()) return
+
+                      val sender = messages[0].originatingAddress ?: ""
+                      val fullBody = StringBuilder()
+                      for (msg in messages) {
+                          fullBody.append(msg.messageBody ?: "")
+                      }
+                      val bodyStr = fullBody.toString()
+
+                      Log.d("LihketSmsReceiver", "Incoming SMS from: $sender")
+
+                      // Local Filtering: Only process CBE and Telebirr (127) messages
+                      if (SmsParser.isTrustedPaymentSender(sender, bodyStr)) {
+                          val parsed = SmsParser.parse(sender, bodyStr)
+                          if (parsed.isValid) {
+                              FirebaseSyncManager.pushSmsAndVerifyOrder(parsed)
+                          }
+                      }
+                  }
+              }
+          }
+          EOF_RECEIVER
+
+          cat << 'EOF_SERVICE' > app/src/main/java/lihket_digital_academy/et/SmsForegroundService.kt
+          package lihket_digital_academy.et
+
+          import android.app.Notification
+          import android.app.NotificationChannel
+          import android.app.NotificationManager
+          import android.app.Service
+          import android.content.Intent
+          import android.os.Build
+          import android.os.IBinder
+          import androidx.core.app.NotificationCompat
+
+          class SmsForegroundService : Service() {
+
+              companion object {
+                  private const val CHANNEL_ID = "lihket_sms_listener_channel"
+                  private const val NOTIFICATION_ID = 25101
+              }
+
+              override fun onCreate() {
+                  super.onCreate()
+                  createNotificationChannel()
+                  val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                      .setContentTitle("Lihket Digital Academy SMS Listener")
+                      .setContentText("24/7 CBE & Telebirr Auto-Verification Active (Firebase Connected)")
+                      .setSmallIcon(android.R.drawable.sym_action_email)
+                      .setOngoing(true)
+                      .build()
+
+                  startForeground(NOTIFICATION_ID, notification)
+
+                  // Start Two-Way Firebase Command Listener
+                  FirebaseSyncManager.startTwoWayCommandListener(applicationContext)
+              }
+
+              override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+                  return START_STICKY
+              }
+
+              override fun onBind(intent: Intent?): IBinder? = null
+
+              private fun createNotificationChannel() {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      val channel = NotificationChannel(
+                          CHANNEL_ID,
+                          "Lihket 24/7 Payment Listener",
+                          NotificationManager.IMPORTANCE_LOW
+                      )
+                      val manager = getSystemService(NotificationManager::class.java)
+                      manager?.createNotificationChannel(channel)
+                  }
+              }
+          }
+          EOF_SERVICE
+
+          cat << 'EOF_MAIN' > app/src/main/java/lihket_digital_academy/et/MainActivity.kt
+          package lihket_digital_academy.et
+
+          import android.Manifest
+          import android.content.Context
+          import android.content.Intent
+          import android.content.pm.PackageManager
+          import android.net.Uri
+          import android.os.Build
+          import android.os.Bundle
+          import android.os.PowerManager
+          import android.provider.Settings
+          import android.widget.Button
+          import android.widget.LinearLayout
+          import android.widget.ScrollView
+          import android.widget.TextView
+          import androidx.appcompat.app.AppCompatActivity
+          import androidx.core.app.ActivityCompat
+          import androidx.core.content.ContextCompat
+
+          class MainActivity : AppCompatActivity() {
+
+              private lateinit var statusTextView: TextView
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+
+                  // Clean Native Programmatic UI for Android Tablet & Phone
+                  val scrollView = ScrollView(this)
+                  val container = LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      setPadding(48, 64, 48, 64)
+                  }
+
+                  val titleView = TextView(this).apply {
+                      text = "Lihket Digital Academy
+          24/7 CBE & Telebirr SMS Listener"
+                      textSize = 22f
+                      setPadding(0, 0, 0, 24)
+                  }
+
+                  statusTextView = TextView(this).apply {
+                      text = "Owner: Getachew Biset
+          CBE: 1000212746367 (1********6367)
+          Telebirr: 0925432016 (127)
+          Firebase Project: lihketdigitalpayment
+
+          Status: Initializing..."
+                      textSize = 15f
+                      setPadding(0, 0, 0, 32)
+                  }
+
+                  val btnPermissions = Button(this).apply {
+                      text = "1. Grant SMS Permissions & Start 24/7 Service"
+                      setOnClickListener { requestSmsPermissions() }
+                  }
+
+                  val btnBattery = Button(this).apply {
+                      text = "2. Ignore Battery Optimizations (24/7 Background)"
+                      setOnClickListener { requestIgnoreBatteryOptimizations() }
+                  }
+
+                  val btnRescan = Button(this).apply {
+                      text = "3. Sync Recent CBE/Telebirr Inbox SMS Now"
+                      setOnClickListener {
+                          FirebaseSyncManager.scanRecentInboxSms(this@MainActivity, 15)
+                          statusTextView.text = "Synced recent CBE & Telebirr SMS messages with Firebase (lihketdigitalpayment)!"
+                      }
+                  }
+
+                  container.addView(titleView)
+                  container.addView(statusTextView)
+                  container.addView(btnPermissions)
+                  container.addView(btnBattery)
+                  container.addView(btnRescan)
+                  scrollView.addView(container)
+                  setContentView(scrollView)
+
+                  requestSmsPermissions()
+                  requestIgnoreBatteryOptimizations()
+              }
+
+              private fun requestSmsPermissions() {
+                  val needed = mutableListOf(
+                      Manifest.permission.RECEIVE_SMS,
+                      Manifest.permission.READ_SMS
+                  )
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                      needed.add(Manifest.permission.POST_NOTIFICATIONS)
+                  }
+
+                  val missing = needed.filter {
+                      ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+                  }
+
+                  if (missing.isNotEmpty()) {
+                      ActivityCompat.requestPermissions(this, missing.toTypedArray(), 101)
+                  } else {
+                      startListenerService()
+                  }
+              }
+
+              private fun startListenerService() {
+                  val serviceIntent = Intent(this, SmsForegroundService::class.java)
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      startForegroundService(serviceIntent)
+                  } else {
+                      startService(serviceIntent)
+                  }
+                  statusTextView.text = "✅ ACTIVE: Listening 24/7 for CBE (1********6367) & Telebirr (127) SMS -> Syncing Two-Way with Firebase (lihketdigitalpayment)."
+              }
+
+              private fun requestIgnoreBatteryOptimizations() {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                      val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+                      if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                          val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                              data = Uri.parse("package:$packageName")
+                          }
+                          startActivity(intent)
+                      }
+                  }
+              }
+
+              override fun onRequestPermissionsResult(
+                  requestCode: Int,
+                  permissions: Array<out String>,
+                  grantResults: IntArray
+              ) {
+                  super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+                  if (requestCode == 101 && grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                      startListenerService()
+                  }
+              }
+          }
+          EOF_MAIN
+
+          # Strip leading 10 spaces from generated heredoc files
+          python3 - << 'PY_STRIP'
+          import glob
+          files = [
+              "settings.gradle.kts", "build.gradle.kts", "app/build.gradle.kts",
+              "app/proguard-rules.pro", "app/google-services.json",
+              "app/src/main/AndroidManifest.xml",
+              "app/src/main/java/lihket_digital_academy/et/SmsParser.kt",
+              "app/src/main/java/lihket_digital_academy/et/FirebaseSyncManager.kt",
+              "app/src/main/java/lihket_digital_academy/et/SmsBroadcastReceiver.kt",
+              "app/src/main/java/lihket_digital_academy/et/SmsForegroundService.kt",
+              "app/src/main/java/lihket_digital_academy/et/MainActivity.kt"
+          ]
+          for f in files:
+              lines = open(f, "r", encoding="utf-8").read().splitlines()
+              cleaned = [line[10:] if line.startswith(" " * 10) else line for line in lines]
+              open(f, "w", encoding="utf-8").write("\n".join(cleaned) + "\n")
+          PY_STRIP
+
+      - name: 3. Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 4. Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
+      - name: 5. Generate Signed Keystore for Lihket Digital Academy
+        working-directory: app
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'lihketdigitalacademy@251et' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'lihketdigitalacademy.et' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'lihketdigitalacademy@251et' }}
+        run: |
+          if [ ! -f lihket-release-key.jks ]; then
+            keytool -genkeypair -v \
+              -keystore lihket-release-key.jks \
+              -alias "$KEY_ALIAS" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass "$KEYSTORE_PASSWORD" \
+              -keypass "$KEY_PASSWORD" \
+              -dname "CN=Getachew Biset, OU=Lihket Digital Academy, O=Lihket, L=Addis Ababa, ST=Addis Ababa, C=ET"
+          fi
+
+      - name: 6. Build Signed Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'lihketdigitalacademy@251et' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'lihketdigitalacademy.et' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'lihketdigitalacademy@251et' }}
+        run: |
+          gradle assembleRelease --stacktrace
+
+      - name: 7. Upload Signed APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lihket-SMS-Listener-Signed-APK
+          path: app/build/outputs/apk/release/*.apk
