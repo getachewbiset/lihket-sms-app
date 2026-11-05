@@ -1,4 +1,4 @@
-name: Build & Sign Lihket SMS Listener APK (Mobile 1-File Builder)
+name: Build & Sign Lihket SMS Listener APK
 
 on:
   push:
@@ -13,803 +13,161 @@ jobs:
       - name: 1. Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 2. Auto-Extract ZIP or Auto-Generate Full Android Project Structure
+      - name: 2. Unpack Verified Android Project & gradle.properties
         run: |
-          # If user uploaded Lihket_Digital_Academy_Full_Project.zip directly from phone without extracting:
-          if [ -f "Lihket_Digital_Academy_Full_Project.zip" ]; then
-            echo "Found ZIP file in repo root! Extracting automatically..."
-            unzip -o Lihket_Digital_Academy_Full_Project.zip
-          fi
-
-          # Ensure directories exist even if ONLY main.yml was pasted on mobile:
-          mkdir -p app/src/main/java/lihket_digital_academy/et
-
-          cat << 'EOF_SETTINGS' > settings.gradle.kts
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "LihketSmsAutomation"
-          include(":app")
-          EOF_SETTINGS
-
-          cat << 'EOF_ROOT_GRADLE' > build.gradle.kts
-          plugins {
-              id("com.android.application") version "8.5.2" apply false
-              id("org.jetbrains.kotlin.android") version "1.9.24" apply false
-              id("com.google.gms.google-services") version "4.4.2" apply false
-          }
-          EOF_ROOT_GRADLE
-
-          cat << 'EOF_APP_GRADLE' > app/build.gradle.kts
-          plugins {
-              id("com.android.application")
-              id("org.jetbrains.kotlin.android")
-              id("com.google.gms.google-services")
-          }
-
-          android {
-              namespace = "lihket_digital_academy.et"
-              compileSdk = 34
-
-              defaultConfig {
-                  applicationId = "lihket_digital_academy.et"
-                  minSdk = 24
-                  targetSdk = 34
-                  versionCode = 1
-                  versionName = "1.0.0"
-              }
-
-              signingConfigs {
-                  create("release") {
-                      val keystoreFile = file("lihket-release-key.jks")
-                      if (keystoreFile.exists()) {
-                          storeFile = keystoreFile
-                          storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "lihketdigitalacademy@251et"
-                          keyAlias = System.getenv("KEY_ALIAS") ?: "lihketdigitalacademy.et"
-                          keyPassword = System.getenv("KEY_PASSWORD") ?: "lihketdigitalacademy@251et"
-                      }
-                  }
-              }
-
-              buildTypes {
-                  release {
-                      isMinifyEnabled = false
-                      signingConfig = signingConfigs.getByName("release")
-                      proguardFiles(
-                          getDefaultProguardFile("proguard-android-optimize.txt"),
-                          "proguard-rules.pro"
-                      )
-                  }
-                  debug {
-                      signingConfig = signingConfigs.getByName("release")
-                  }
-              }
-
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
-          }
-
-          dependencies {
-              // Firebase BoM
-              implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
-              implementation("com.google.firebase:firebase-analytics")
-              implementation("com.google.firebase:firebase-firestore")
-
-              // AndroidX Core & Lifecycle
-              implementation("androidx.core:core-ktx:1.13.1")
-              implementation("androidx.appcompat:appcompat:1.7.0")
-              implementation("com.google.android.material:material:1.12.0")
-          }
-          EOF_APP_GRADLE
-
-          cat << 'EOF_PROGUARD' > app/proguard-rules.pro
-          -keep class lihket_digital_academy.et.** { *; }
-          EOF_PROGUARD
-
-          cat << 'EOF_GOOGLE_SERVICES' > app/google-services.json
-          {
-            "project_info": {
-              "project_number": "519424016159",
-              "project_id": "lihketdigitalpayment",
-              "storage_bucket": "lihketdigitalpayment.firebasestorage.app"
-            },
-            "client": [
-              {
-                "client_info": {
-                  "mobilesdk_app_id": "1:519424016159:android:ee51693baeab4926f8fa2a",
-                  "android_client_info": {
-                    "package_name": "lihket_digital_academy.et"
-                  }
-                },
-                "oauth_client": [],
-                "api_key": [
-                  {
-                    "current_key": "AIzaSyDFMpfyeZd5ZZ_kmJuSrOflFnYIXqgRjJg"
-                  }
-                ],
-                "services": {
-                  "appinvite_service": {
-                    "other_platform_oauth_client": []
-                  }
-                }
-              }
-            ],
-            "configuration_version": "1"
-          }
-          EOF_GOOGLE_SERVICES
-
-          cat << 'EOF_MANIFEST' > app/src/main/AndroidManifest.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              package="lihket_digital_academy.et">
-
-              <!-- 1. SMS & Network Permissions -->
-              <uses-permission android:name="android.permission.RECEIVE_SMS" />
-              <uses-permission android:name="android.permission.READ_SMS" />
-              <uses-permission android:name="android.permission.INTERNET" />
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-              <!-- 2. 24/7 Background Execution & Battery Optimization Permissions -->
-              <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-              <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-              <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-              <uses-permission android:name="android.permission.WAKE_LOCK" />
-              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-              <application
-                  android:allowBackup="true"
-                  android:label="Lihket SMS Automation"
-                  android:supportsRtl="true"
-                  android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
-
-                  <!-- Main Dashboard Activity -->
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-
-                  <!-- High-Priority BroadcastReceiver for CBE & Telebirr Incoming SMS -->
-                  <receiver
-                      android:name=".SmsBroadcastReceiver"
-                      android:enabled="true"
-                      android:exported="true"
-                      android:permission="android.permission.BROADCAST_SMS">
-                      <intent-filter android:priority="999">
-                          <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-                          <action android:name="android.intent.action.BOOT_COMPLETED" />
-                      </intent-filter>
-                  </receiver>
-
-                  <!-- 24/7 Foreground Service for Two-Way Firebase Sync -->
-                  <service
-                      android:name=".SmsForegroundService"
-                      android:enabled="true"
-                      android:exported="false"
-                      android:foregroundServiceType="dataSync" />
-
-              </application>
-          </manifest>
-          EOF_MANIFEST
-
-          cat << 'EOF_PARSER' > app/src/main/java/lihket_digital_academy/et/SmsParser.kt
-          package lihket_digital_academy.et
-
-          import java.util.Locale
-
-          data class ParsedPaymentSms(
-              val isValid: Boolean,
-              val provider: String,          // "CBE" or "Telebirr"
-              val senderAddress: String,     // "CBE" or "127"
-              val transactionId: String,     // e.g. "FT26309ABC12" or "DB62J9H7KL"
-              val amount: Double,            // e.g. 1500.00
-              val senderPhone: String,       // e.g. "0911223344" (for Telebirr)
-              val receiptLink: String,       // e.g. "https://mbreciept.cbe.com.et/..."
-              val rawMessage: String
-          )
-
-          object SmsParser {
-
-              // Merchant Constants for Getachew Biset (Lihket Digital Academy)
-              private const val EXPECTED_CBE_SUFFIX = "6367" // Matches 1********6367 / 1000212746367
-
-              /**
-               * Checks if the SMS comes from Commercial Bank of Ethiopia (CBE) or Telebirr (127).
-               */
-              fun isTrustedPaymentSender(sender: String, body: String): Boolean {
-                  val normSender = sender.trim().uppercase(Locale.ROOT)
-                  val normBody = body.trim()
-                  val isCbe = normSender.contains("CBE") ||
-                          normBody.contains("mbreciept.cbe.com.et", ignoreCase = true) ||
-                          normBody.contains("1********6367")
-                  val isTelebirr = normSender == "127" ||
-                          normSender.contains("TELEBIRR") ||
-                          normBody.contains("telebirr", ignoreCase = true) ||
-                          normBody.contains("ቴሌብር")
-                  return isCbe || isTelebirr
-              }
-
-              /**
-               * Parses both English and Amharic SMS messages from CBE and Telebirr (127).
-               */
-              fun parse(sender: String, body: String): ParsedPaymentSms {
-                  val normSender = sender.trim()
-                  val normBody = body.trim()
-
-                  val isCbe = normSender.uppercase(Locale.ROOT).contains("CBE") ||
-                          normBody.contains("mbreciept.cbe.com.et", ignoreCase = true) ||
-                          normBody.contains("1********6367")
-
-                  val provider = if (isCbe) "CBE" else "Telebirr"
-
-                  // 1. Extract Amount (Supports "ETB 1,500.00", "ብር 500.00 ተቀብለዋል", "500.00 ETB")
-                  val amountRegexes = listOf(
-                      Regex("""(?:ETB|ብር|Birr)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)""", RegexOption.IGNORE_CASE),
-                      Regex("""([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)\s*(?:ETB|ብር|Birr)""", RegexOption.IGNORE_CASE)
-                  )
-                  var extractedAmount = 0.0
-                  for (regex in amountRegexes) {
-                      val match = regex.find(normBody)
-                      if (match != null) {
-                          val cleanNum = match.groupValues[1].replace(",", "")
-                          extractedAmount = cleanNum.toDoubleOrNull() ?: 0.0
-                          if (extractedAmount > 0.0) break
-                      }
-                  }
-
-                  // 2. Extract Transaction ID / Reference Number
-                  var extractedTxId = ""
-                  if (provider == "CBE") {
-                      val cbeTxRegexes = listOf(
-                          Regex("""mbreciept\.cbe\.com\.et/\?id=([A-Z0-9]{8,20})""", RegexOption.IGNORE_CASE),
-                          Regex("""mbreciept\.cbe\.com\.et/([A-Z0-9]{8,20})""", RegexOption.IGNORE_CASE),
-                          Regex("""apps\.cbe\.com\.et:100/\?id=([A-Z0-9]{8,20})""", RegexOption.IGNORE_CASE),
-                          Regex("""\b(FT[0-9A-Z]{8,16})\b""", RegexOption.IGNORE_CASE),
-                          Regex("""(?:Ref(?:\s*No)?|Transaction\s*ID|መለያ\s*ቁጥር)[:\s#]*([A-Z0-9]{8,20})""", RegexOption.IGNORE_CASE)
-                      )
-                      for (r in cbeTxRegexes) {
-                          val m = r.find(normBody)
-                          if (m != null) {
-                              extractedTxId = m.groupValues[1].uppercase(Locale.ROOT).take(12)
-                              break
-                          }
-                      }
-                  } else {
-                      val telebirrTxRegexes = listOf(
-                          Regex("""(?:transaction\s*(?:number|no|id)|የትራንዛክሽን\s*(?:ቁጥር|መለያ)|ቁጥር)\s*(?:is|ነው)?[:\s]*([A-Z0-9]{8,15})""", RegexOption.IGNORE_CASE),
-                          Regex("""\b([A-Z]{2}[0-9A-Z]{8,12})\b""")
-                      )
-                      for (r in telebirrTxRegexes) {
-                          val m = r.find(normBody)
-                          if (m != null) {
-                              extractedTxId = m.groupValues[1].uppercase(Locale.ROOT)
-                              break
-                          }
-                      }
-                  }
-
-                  // 3. Extract Sender Phone Number (for Telebirr pairing)
-                  val phoneRegex = Regex("""(?:\+?251|0)?(9[0-9]{8}|7[0-9]{8}|[0-9]{2}\*+[0-9]{2,4})""")
-                  val extractedPhone = phoneRegex.find(normBody)?.value ?: if (provider == "CBE") "CBE_TRANSFER" else "UNKNOWN"
-
-                  // 4. Verify CBE Account ends with 6367 (1********6367)
-                  val accountMatches = if (provider == "CBE") {
-                      normBody.contains(EXPECTED_CBE_SUFFIX)
-                  } else {
-                      true
-                  }
-
-                  // 5. Extract Official Receipt Link
-                  val urlRegex = Regex("""https?://[^\s]+""", RegexOption.IGNORE_CASE)
-                  val receiptUrl = urlRegex.find(normBody)?.value
-                      ?: if (provider == "CBE" && extractedTxId.isNotEmpty()) "https://mbreciept.cbe.com.et/$extractedTxId" else ""
-
-                  val isValid = extractedAmount > 0.0 && extractedTxId.isNotEmpty() && accountMatches
-
-                  return ParsedPaymentSms(
-                      isValid = isValid,
-                      provider = provider,
-                      senderAddress = normSender,
-                      transactionId = extractedTxId,
-                      amount = extractedAmount,
-                      senderPhone = extractedPhone,
-                      receiptLink = receiptUrl,
-                      rawMessage = normBody
-                  )
-              }
-          }
-          EOF_PARSER
-
-          cat << 'EOF_SYNC' > app/src/main/java/lihket_digital_academy/et/FirebaseSyncManager.kt
-          package lihket_digital_academy.et
-
-          import android.content.Context
-          import android.database.Cursor
-          import android.net.Uri
-          import android.util.Log
-          import com.google.firebase.Timestamp
-          import com.google.firebase.firestore.FieldValue
-          import com.google.firebase.firestore.FirebaseFirestore
-          import java.util.Locale
-
-          object FirebaseSyncManager {
-
-              private const val TAG = "LihketFirebaseSync"
-
-              /**
-               * Pushes a parsed CBE or Telebirr SMS to Firestore and immediately runs 100% Order Pairing.
-               */
-              fun pushSmsAndVerifyOrder(parsed: ParsedPaymentSms) {
-                  if (!parsed.isValid) return
-
-                  val db = FirebaseFirestore.getInstance()
-                  val txIdUpper = parsed.transactionId.uppercase(Locale.ROOT)
-
-                  val smsDocData = hashMapOf(
-                      "provider" to parsed.provider,
-                      "sender" to parsed.senderAddress,
-                      "transactionId" to txIdUpper,
-                      "amount" to parsed.amount,
-                      "senderPhone" to parsed.senderPhone,
-                      "receiptLink" to parsed.receiptLink,
-                      "rawBody" to parsed.rawMessage,
-                      "consumed" to false,
-                      "timestamp" to FieldValue.serverTimestamp()
-                  )
-
-                  // Use transactionId as document key to prevent duplicate SMS writes
-                  db.collection("incoming_sms").document(txIdUpper)
-                      .set(smsDocData)
-                      .addOnSuccessListener {
-                          Log.d(TAG, "SMS saved to Firebase: $txIdUpper (${parsed.amount} ETB)")
-                          pairWithPendingOrder(db, parsed)
-                      }
-                      .addOnFailureListener { e ->
-                          Log.e(TAG, "Error pushing SMS to Firebase", e)
-                      }
-              }
-
-              /**
-               * Pairs the incoming SMS with any matching order in `pending_orders` (100% Verification).
-               */
-              private fun pairWithPendingOrder(db: FirebaseFirestore, sms: ParsedPaymentSms) {
-                  val txIdUpper = sms.transactionId.uppercase(Locale.ROOT)
-
-                  db.collection("pending_orders")
-                      .whereEqualTo("transactionId", txIdUpper)
-                      .get()
-                      .addOnSuccessListener { snapshot ->
-                          for (doc in snapshot.documents) {
-                              val currentStatus = doc.getString("status") ?: "WAITING_FOR_SMS"
-                              if (currentStatus == "VERIFIED") continue
-
-                              val expectedAmount = doc.getDouble("amount") ?: 0.0
-                              val orderMethod = doc.getString("method") ?: ""
-                              val studentPhone = doc.getString("studentPhone") ?: ""
-
-                              // 1. Check Method Match
-                              if (!orderMethod.equals(sms.provider, ignoreCase = true)) {
-                                  doc.reference.update(
-                                      mapOf(
-                                          "status" to "ERROR_METHOD_MISMATCH",
-                                          "statusReason" to "Payment method mismatch: expected $orderMethod, got ${sms.provider}"
-                                      )
-                                  )
-                                  continue
-                              }
-
-                              // 2. Check Exact Amount (100% Match Required)
-                              if (sms.amount < expectedAmount) {
-                                  val reason = "የገንዘብ መጠን አልተዛመደም! የተጠየቀው፡ $expectedAmount ብር፣ የገባው፡ ${sms.amount} ብር"
-                                  doc.reference.update(
-                                      mapOf(
-                                          "status" to "ERROR_AMOUNT_MISMATCH",
-                                          "statusReason" to reason
-                                      )
-                                  )
-                                  logSecurityAlert(db, "AMOUNT_MISMATCH", reason, txIdUpper)
-                                  continue
-                              }
-
-                              // 3. Check Telebirr Phone Match
-                              if (sms.provider == "Telebirr" && !phonesMatch(studentPhone, sms.senderPhone)) {
-                                  val reason = "የቴሌብር ስልክ ቁጥር አልተዛመደም! የተመዘገበው፡ $studentPhone፣ የላከው፡ ${sms.senderPhone}"
-                                  doc.reference.update(
-                                      mapOf(
-                                          "status" to "ERROR_PHONE_MISMATCH",
-                                          "statusReason" to reason
-                                      )
-                                  )
-                                  logSecurityAlert(db, "PHONE_MISMATCH", reason, txIdUpper)
-                                  continue
-                              }
-
-                              // 4. All Checks 100% Passed -> Auto-Unlock Course 24/7!
-                              doc.reference.update(
-                                  mapOf(
-                                      "status" to "VERIFIED",
-                                      "statusReason" to "✅ 100% ተረጋግጧል (${sms.provider} • ${sms.amount} ETB • TxID: $txIdUpper)",
-                                      "verifiedAt" to FieldValue.serverTimestamp()
-                                  )
-                              )
-                              db.collection("incoming_sms").document(txIdUpper).update(
-                                  mapOf(
-                                      "consumed" to true,
-                                      "consumedByOrderId" to doc.id
-                                  )
-                              )
-                          }
-                      }
-              }
-
-              private fun phonesMatch(orderPhone: String, smsPhone: String): Boolean {
-                  if (smsPhone == "UNKNOWN" || smsPhone.isBlank()) return true
-                  val cleanOrder = orderPhone.filter { it.isDigit() }.takeLast(9)
-                  if (smsPhone.contains("*")) {
-                      val tail = smsPhone.filter { it.isDigit() }.takeLast(2)
-                      return cleanOrder.endsWith(tail)
-                  }
-                  val cleanSms = smsPhone.filter { it.isDigit() }.takeLast(9)
-                  return cleanOrder == cleanSms
-              }
-
-              private fun logSecurityAlert(db: FirebaseFirestore, type: String, detail: String, txId: String) {
-                  db.collection("security_alerts").add(
-                      mapOf(
-                          "type" to type,
-                          "title" to "Security / Verification Alert ($type)",
-                          "detail" to "$detail (TxID: $txId)",
-                          "timestamp" to Timestamp.now()
-                      )
-                  )
-              }
-
-              /**
-               * Two-Way Sync: Listens to `listener_commands/latest_command` from Firebase so Web Admin
-               * or Pending Orders can trigger an immediate inbox scan or heartbeat check on the tablet.
-               */
-              fun startTwoWayCommandListener(context: Context) {
-                  val db = FirebaseFirestore.getInstance()
-
-                  // Update device heartbeat
-                  db.collection("device_status").document("tablet_main").set(
-                      mapOf(
-                          "owner" to "Getachew Biset",
-                          "package" to "lihket_digital_academy.et",
-                          "status" to "ONLINE_LISTENING_24_7",
-                          "lastHeartbeat" to FieldValue.serverTimestamp()
-                      )
-                  )
-
-                  db.collection("listener_commands").document("latest_command")
-                      .addSnapshotListener { snapshot, error ->
-                          if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
-                          val cmd = snapshot.getString("command") ?: return@addSnapshotListener
-                          when (cmd) {
-                              "RESCAN_LAST_10_SMS", "WATCH_TRANSACTION" -> {
-                                  scanRecentInboxSms(context, 15)
-                              }
-                              "PING_HEARTBEAT" -> {
-                                  db.collection("device_status").document("tablet_main").update(
-                                      "lastHeartbeat", FieldValue.serverTimestamp()
-                                  )
-                              }
-                          }
-                      }
-              }
-
-              /**
-               * Reads recent SMS from the Android Inbox (used when triggered by Two-Way Firebase sync
-               * in case network was briefly offline when SMS arrived).
-               */
-              fun scanRecentInboxSms(context: Context, limit: Int = 15) {
-                  try {
-                      val cursor: Cursor? = context.contentResolver.query(
-                          Uri.parse("content://sms/inbox"),
-                          arrayOf("address", "body", "date"),
-                          null,
-                          null,
-                          "date DESC LIMIT $limit"
-                      )
-                      cursor?.use {
-                          val addrIdx = it.getColumnIndex("address")
-                          val bodyIdx = it.getColumnIndex("body")
-                          while (it.moveToNext()) {
-                              val sender = if (addrIdx >= 0) it.getString(addrIdx) ?: "" else ""
-                              val body = if (bodyIdx >= 0) it.getString(bodyIdx) ?: "" else ""
-                              if (SmsParser.isTrustedPaymentSender(sender, body)) {
-                                  val parsed = SmsParser.parse(sender, body)
-                                  if (parsed.isValid) {
-                                      pushSmsAndVerifyOrder(parsed)
-                                  }
-                              }
-                          }
-                      }
-                  } catch (e: SecurityException) {
-                      Log.e(TAG, "READ_SMS permission not granted yet", e)
-                  }
-              }
-          }
-          EOF_SYNC
-
-          cat << 'EOF_RECEIVER' > app/src/main/java/lihket_digital_academy/et/SmsBroadcastReceiver.kt
-          package lihket_digital_academy.et
-
-          import android.content.BroadcastReceiver
-          import android.content.Context
-          import android.content.Intent
-          import android.os.Build
-          import android.provider.Telephony
-          import android.util.Log
-
-          class SmsBroadcastReceiver : BroadcastReceiver() {
-
-              override fun onReceive(context: Context, intent: Intent) {
-                  if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-                      val serviceIntent = Intent(context, SmsForegroundService::class.java)
-                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                          context.startForegroundService(serviceIntent)
-                      } else {
-                          context.startService(serviceIntent)
-                      }
-                      return
-                  }
-
-                  if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
-                      val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
-                      if (messages.isNullOrEmpty()) return
-
-                      val sender = messages[0].originatingAddress ?: ""
-                      val fullBody = StringBuilder()
-                      for (msg in messages) {
-                          fullBody.append(msg.messageBody ?: "")
-                      }
-                      val bodyStr = fullBody.toString()
-
-                      Log.d("LihketSmsReceiver", "Incoming SMS from: $sender")
-
-                      // Local Filtering: Only process CBE and Telebirr (127) messages
-                      if (SmsParser.isTrustedPaymentSender(sender, bodyStr)) {
-                          val parsed = SmsParser.parse(sender, bodyStr)
-                          if (parsed.isValid) {
-                              FirebaseSyncManager.pushSmsAndVerifyOrder(parsed)
-                          }
-                      }
-                  }
-              }
-          }
-          EOF_RECEIVER
-
-          cat << 'EOF_SERVICE' > app/src/main/java/lihket_digital_academy/et/SmsForegroundService.kt
-          package lihket_digital_academy.et
-
-          import android.app.Notification
-          import android.app.NotificationChannel
-          import android.app.NotificationManager
-          import android.app.Service
-          import android.content.Intent
-          import android.os.Build
-          import android.os.IBinder
-          import androidx.core.app.NotificationCompat
-
-          class SmsForegroundService : Service() {
-
-              companion object {
-                  private const val CHANNEL_ID = "lihket_sms_listener_channel"
-                  private const val NOTIFICATION_ID = 25101
-              }
-
-              override fun onCreate() {
-                  super.onCreate()
-                  createNotificationChannel()
-                  val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-                      .setContentTitle("Lihket Digital Academy SMS Listener")
-                      .setContentText("24/7 CBE & Telebirr Auto-Verification Active (Firebase Connected)")
-                      .setSmallIcon(android.R.drawable.sym_action_email)
-                      .setOngoing(true)
-                      .build()
-
-                  startForeground(NOTIFICATION_ID, notification)
-
-                  // Start Two-Way Firebase Command Listener
-                  FirebaseSyncManager.startTwoWayCommandListener(applicationContext)
-              }
-
-              override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-                  return START_STICKY
-              }
-
-              override fun onBind(intent: Intent?): IBinder? = null
-
-              private fun createNotificationChannel() {
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                      val channel = NotificationChannel(
-                          CHANNEL_ID,
-                          "Lihket 24/7 Payment Listener",
-                          NotificationManager.IMPORTANCE_LOW
-                      )
-                      val manager = getSystemService(NotificationManager::class.java)
-                      manager?.createNotificationChannel(channel)
-                  }
-              }
-          }
-          EOF_SERVICE
-
-          cat << 'EOF_MAIN' > app/src/main/java/lihket_digital_academy/et/MainActivity.kt
-          package lihket_digital_academy.et
-
-          import android.Manifest
-          import android.content.Context
-          import android.content.Intent
-          import android.content.pm.PackageManager
-          import android.net.Uri
-          import android.os.Build
-          import android.os.Bundle
-          import android.os.PowerManager
-          import android.provider.Settings
-          import android.widget.Button
-          import android.widget.LinearLayout
-          import android.widget.ScrollView
-          import android.widget.TextView
-          import androidx.appcompat.app.AppCompatActivity
-          import androidx.core.app.ActivityCompat
-          import androidx.core.content.ContextCompat
-
-          class MainActivity : AppCompatActivity() {
-
-              private lateinit var statusTextView: TextView
-
-              override fun onCreate(savedInstanceState: Bundle?) {
-                  super.onCreate(savedInstanceState)
-
-                  // Clean Native Programmatic UI for Android Tablet & Phone
-                  val scrollView = ScrollView(this)
-                  val container = LinearLayout(this).apply {
-                      orientation = LinearLayout.VERTICAL
-                      setPadding(48, 64, 48, 64)
-                  }
-
-                  val titleView = TextView(this).apply {
-                      text = "Lihket Digital Academy
-          24/7 CBE & Telebirr SMS Listener"
-                      textSize = 22f
-                      setPadding(0, 0, 0, 24)
-                  }
-
-                  statusTextView = TextView(this).apply {
-                      text = "Owner: Getachew Biset
-          CBE: 1000212746367 (1********6367)
-          Telebirr: 0925432016 (127)
-          Firebase Project: lihketdigitalpayment
-
-          Status: Initializing..."
-                      textSize = 15f
-                      setPadding(0, 0, 0, 32)
-                  }
-
-                  val btnPermissions = Button(this).apply {
-                      text = "1. Grant SMS Permissions & Start 24/7 Service"
-                      setOnClickListener { requestSmsPermissions() }
-                  }
-
-                  val btnBattery = Button(this).apply {
-                      text = "2. Ignore Battery Optimizations (24/7 Background)"
-                      setOnClickListener { requestIgnoreBatteryOptimizations() }
-                  }
-
-                  val btnRescan = Button(this).apply {
-                      text = "3. Sync Recent CBE/Telebirr Inbox SMS Now"
-                      setOnClickListener {
-                          FirebaseSyncManager.scanRecentInboxSms(this@MainActivity, 15)
-                          statusTextView.text = "Synced recent CBE & Telebirr SMS messages with Firebase (lihketdigitalpayment)!"
-                      }
-                  }
-
-                  container.addView(titleView)
-                  container.addView(statusTextView)
-                  container.addView(btnPermissions)
-                  container.addView(btnBattery)
-                  container.addView(btnRescan)
-                  scrollView.addView(container)
-                  setContentView(scrollView)
-
-                  requestSmsPermissions()
-                  requestIgnoreBatteryOptimizations()
-              }
-
-              private fun requestSmsPermissions() {
-                  val needed = mutableListOf(
-                      Manifest.permission.RECEIVE_SMS,
-                      Manifest.permission.READ_SMS
-                  )
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                      needed.add(Manifest.permission.POST_NOTIFICATIONS)
-                  }
-
-                  val missing = needed.filter {
-                      ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-                  }
-
-                  if (missing.isNotEmpty()) {
-                      ActivityCompat.requestPermissions(this, missing.toTypedArray(), 101)
-                  } else {
-                      startListenerService()
-                  }
-              }
-
-              private fun startListenerService() {
-                  val serviceIntent = Intent(this, SmsForegroundService::class.java)
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                      startForegroundService(serviceIntent)
-                  } else {
-                      startService(serviceIntent)
-                  }
-                  statusTextView.text = "✅ ACTIVE: Listening 24/7 for CBE (1********6367) & Telebirr (127) SMS -> Syncing Two-Way with Firebase (lihketdigitalpayment)."
-              }
-
-              private fun requestIgnoreBatteryOptimizations() {
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                      val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-                      if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                          val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                              data = Uri.parse("package:$packageName")
-                          }
-                          startActivity(intent)
-                      }
-                  }
-              }
-
-              override fun onRequestPermissionsResult(
-                  requestCode: Int,
-                  permissions: Array<out String>,
-                  grantResults: IntArray
-              ) {
-                  super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-                  if (requestCode == 101 && grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                      startListenerService()
-                  }
-              }
-          }
-          EOF_MAIN
-
-          # Strip leading 10 spaces from generated heredoc files
-          python3 - << 'PY_STRIP'
-          import glob
-          files = [
-              "settings.gradle.kts", "build.gradle.kts", "app/build.gradle.kts",
-              "app/proguard-rules.pro", "app/google-services.json",
-              "app/src/main/AndroidManifest.xml",
-              "app/src/main/java/lihket_digital_academy/et/SmsParser.kt",
-              "app/src/main/java/lihket_digital_academy/et/FirebaseSyncManager.kt",
-              "app/src/main/java/lihket_digital_academy/et/SmsBroadcastReceiver.kt",
-              "app/src/main/java/lihket_digital_academy/et/SmsForegroundService.kt",
-              "app/src/main/java/lihket_digital_academy/et/MainActivity.kt"
-          ]
-          for f in files:
-              lines = open(f, "r", encoding="utf-8").read().splitlines()
-              cleaned = [line[10:] if line.startswith(" " * 10) else line for line in lines]
-              open(f, "w", encoding="utf-8").write("\n".join(cleaned) + "\n")
-          PY_STRIP
+          base64 -d << 'EOF_B64' | tar -xzf -
+          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
+          EOF_B64
+          ls -la
+          ls -la app/
 
       - name: 3. Set up JDK 17
         uses: actions/setup-java@v4
@@ -817,10 +175,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 4. Setup Gradle
+      - name: 4. Setup Gradle 8.7 (Cache Disabled to Prevent Runner Warnings)
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.7'
+          cache-disabled: true
 
       - name: 5. Generate Signed Keystore for Lihket Digital Academy
         working-directory: app
@@ -829,17 +188,16 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'lihketdigitalacademy.et' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'lihketdigitalacademy@251et' }}
         run: |
-          if [ ! -f lihket-release-key.jks ]; then
-            keytool -genkeypair -v \
-              -keystore lihket-release-key.jks \
-              -alias "$KEY_ALIAS" \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -storepass "$KEYSTORE_PASSWORD" \
-              -keypass "$KEY_PASSWORD" \
-              -dname "CN=Getachew Biset, OU=Lihket Digital Academy, O=Lihket, L=Addis Ababa, ST=Addis Ababa, C=ET"
-          fi
+          rm -f lihket-release-key.jks
+          keytool -genkeypair -v \
+            -keystore lihket-release-key.jks \
+            -alias "$KEY_ALIAS" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            -dname "CN=Getachew Biset, OU=Lihket Digital Academy, O=Lihket, L=Addis Ababa, ST=Addis Ababa, C=ET"
 
       - name: 6. Build Signed Release APK
         env:
@@ -847,7 +205,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'lihketdigitalacademy.et' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'lihketdigitalacademy@251et' }}
         run: |
-          gradle assembleRelease --stacktrace
+          gradle assembleRelease --no-daemon --stacktrace
 
       - name: 7. Upload Signed APK Artifact
         uses: actions/upload-artifact@v4
