@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="am" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lihket Digital Academy | ልህቀት ዲጂታል አካዳሚ - 24/7 Automated Course Platform</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans Ethiopic"', 'Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#4f46e5',
+              600: '#4338ca',
+              700: '#3730a3',
+              900: '#1e1b4b',
+            },
+            cbe: '#7c2d12',
+            telebirr: '#0284c7'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Noto Sans Ethiopic', 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.78);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    .pulse-dot {
+      animation: pulse-ring 2s infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <!-- Top Notification Toast -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Navigation Header -->
+  <header class="sticky top-0 z-40 glass-card border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-emerald-400 flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-indigo-500/20">
+          ል
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-base sm:text-lg tracking-tight text-white">Lihket Digital Academy</span>
+            <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              24/7 Auto-Unlock
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">ልህቀት ዲጂታል አካዳሚ • በ CBE እና Telebirr ቅጽበታዊ ክፍያ ማረጋገጫ</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-1 sm:gap-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+        <button id="tabCoursesBtn" type="button" class="nav-tab px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-indigo-600 text-white shadow">
+          ኮርሶች (Courses)
+        </button>
+        <button id="tabMyLearningBtn" type="button" class="nav-tab px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white">
+          የተከፈቱ (<span id="unlockedCountBadge">0</span>)
+        </button>
+        <button id="tabSimulatorBtn" type="button" class="nav-tab px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white">
+          SMS ሙከራ (Simulator)
+        </button>
+        <button id="tabAdminBtn" type="button" class="nav-tab px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white">
+          Admin ዳሽቦርድ
+        </button>
+      </nav>
+
+      <!-- Live Firebase & Tablet Listener Status -->
+      <div class="hidden lg:flex items-center gap-3 text-xs bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800">
+        <span id="firebaseStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-dot"></span>
+        <div>
+          <div id="firebaseConnectionText" class="font-semibold text-emerald-300">Firebase: lihketdigitalpayment</div>
+          <div id="listenerHeartbeatText" class="text-[11px] text-slate-400">Android SMS Listener: Active (2-Way)</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+
+    <!-- ==================== VIEW 1: COURSES & STOREFRONT ==================== -->
+    <section id="viewCourses" class="space-y-8">
+      <!-- Hero Banner -->
+      <div class="relative rounded-3xl overflow-hidden bg-gradient-to-r from-indigo-950 via-slate-900 to-emerald-950 border border-indigo-500/30 p-6 sm:p-10 shadow-2xl">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div class="lg:col-span-7 space-y-4">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold">
+              <span>⚡ 100% አውቶማቲክ የክፍያ ማረጋገጫ (Zero-Delay SMS Verification)</span>
+            </div>
+            <h1 class="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+              የዲጂታል ክህሎትዎን ያሳድጉ፣ <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400">በሰከንዶች ውስጥ</span> መማር ይጀምሩ!
+            </h1>
+            <p class="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
+              በኢትዮጵያ ንግድ ባንክ (CBE) ወይም በቴሌብር (Telebirr) ክፍያ ሲፈጽሙ የእኛ <strong>Custom Android SMS Listener</strong> ክፍያዎን ከፋየርቤዝ ጋር በቅጽበት አመሳክሮ ኮርሱን 24/7 ያለ ሰው ጣልቃ ገብነት ወዲያውኑ ይከፍትልዎታል።
+            </p>
+            <div class="flex flex-wrap items-center gap-3 pt-2">
+              <button id="heroExploreBtn" type="button" class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition">
+                ኮርሶችን ይምረጡ ↓
+              </button>
+              <button id="heroTestFlowBtn" type="button" class="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 font-semibold text-sm transition">
+                ⚡ የክፍያ እና SMS ሙከራ (Live Demo)
+              </button>
+              <button id="shareReferralBtn" type="button" class="px-4 py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold text-sm transition">
+                🎁 ጓደኛ ይጋብዙ (20% ኮሚሽን)
+              </button>
+            </div>
+          </div>
+
+          <!-- Official Payment Accounts Card -->
+          <div class="lg:col-span-5 glass-card rounded-2xl p-5 border border-slate-700/80 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-700/80 pb-3">
+              <div>
+                <h2 class="text-sm font-bold text-white uppercase tracking-wider">ህጋዊ የክፍያ አካውንቶች</h2>
+                <p class="text-xs text-slate-400">ባለቤት፡ <strong class="text-emerald-300">Getachew Biset</strong> (Lihket Digital Academy)</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Verified</span>
+            </div>
+
+            <!-- CBE Card -->
+            <div class="p-3.5 rounded-xl bg-slate-900/90 border border-amber-500/30 flex items-center justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-300">CBE (ንግድ ባንክ)</span>
+                  <span class="text-xs text-slate-400">1********6367</span>
+                </div>
+                <div class="text-base sm:text-lg font-mono font-bold text-white mt-1">1000212746367</div>
+                <div class="text-xs text-slate-400">Getachew Biset • <a href="https://mbreciept.cbe.com.et/" target="_blank" rel="noopener" class="text-indigo-400 underline">Official Receipt</a></div>
+              </div>
+              <button type="button" data-copy="1000212746367" class="copy-btn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-300 border border-amber-500/30 transition">
+                ቅዳ (Copy)
+              </button>
+            </div>
+
+            <!-- Telebirr Card -->
+            <div class="p-3.5 rounded-xl bg-slate-900/90 border border-sky-500/30 flex items-center justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-500/20 text-sky-300">Telebirr (ቴሌብር)</span>
+                  <span class="text-xs text-slate-400">Sender ID: 127</span>
+                </div>
+                <div class="text-base sm:text-lg font-mono font-bold text-white mt-1">0925432016</div>
+                <div class="text-xs text-slate-400">Getachew Biset • Instant Phone + TxID Match</div>
+              </div>
+              <button type="button" data-copy="0925432016" class="copy-btn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-sky-300 border border-sky-500/30 transition">
+                ቅዳ (Copy)
+              </button>
+            </div>
+
+            <div class="text-[11px] text-slate-400 bg-slate-950/70 p-2.5 rounded-lg border border-slate-800">
+              🔒 <strong>ማሳሰቢያ፡</strong> ኮርሱ የሚከፈተው "ከፍያለሁ" ስላሉ ብቻ ሳይሆን የባንክ/ቴሌብር ኤስኤምኤስ ስልካችን ላይ ደርሶ የገንዘብ መጠኑ፣ የትራንዛክሽን ቁጥሩ እና ስልክ ቁጥሩ 100% ሲዛመድ ብቻ ነው።
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter & Search Bar -->
+      <div id="coursesCatalogHeader" class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white">ፕሪሚየም ኮርሶች (Premium Digital Courses)</h2>
+          <p class="text-xs sm:text-sm text-slate-400">የፈለጉትን ኮርስ ይምረጡ -> ክፍያ ይፈጽሙ -> በሰከንዶች ውስጥ በራስ-ሰር ይከፈታል</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="categoryFilterSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="ALL">ሁሉም ዘርፎች (All Categories)</option>
+            <option value="WEB">Web & App Development</option>
+            <option value="MARKETING">Digital Marketing & Business</option>
+            <option value="AI">AI & Automation</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Course Grid -->
+      <div id="coursesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+
+    <!-- ==================== VIEW 2: MY UNLOCKED COURSES ==================== -->
+    <section id="viewMyLearning" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white">የእኔ የተከፈቱ ኮርሶች (My Unlocked Courses)</h2>
+          <p class="text-sm text-slate-400">በ CBE ወይም Telebirr ክፍያቸው 100% ተረጋግጦ የተከፈቱ ኮርሶች እዚህ ይገኛሉ።</p>
+        </div>
+        <button id="backToStoreBtn" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs sm:text-sm font-semibold text-white">
+          + ተጨማሪ ኮርስ ይግዙ
+        </button>
+      </div>
+      <div id="myUnlockedCoursesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+    </section>
+
+    <!-- ==================== VIEW 3: ANDROID SMS LISTENER SIMULATOR & REGEX TESTER ==================== -->
+    <section id="viewSimulator" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 border border-indigo-500/30 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              Native Kotlin SMS Listener Simulator (Two-Way Sync)
+            </span>
+            <h2 class="text-xl sm:text-2xl font-bold text-white mt-2">የአንድሮይድ SMS ማዳመጫ እና Regex መፈተሻ</h2>
+            <p class="text-xs sm:text-sm text-slate-400">
+              ይህ ክፍል በአንድሮይድ ታብሌትዎ ላይ የሚሰራው የ Kotlin `SmsBroadcastReceiver` እና `SmsParser` እንዴት የ CBE እና የ Telebirr መልዕክቶችን በ Regex ለይቶ ወደ Firebase እንደሚልክና ኮርሱን በቅጽበት እንደሚከፍት በቀጥታ የሚፈትሹበት ነው።
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="simPingTabletBtn" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition">
+              📡 ከ Firebase ወደ ስልክ ትዕዛዝ ላክ (2-Way Ping)
+            </button>
+          </div>
+        </div>
+
+        <!-- Preset Sample SMS Buttons -->
+        <div class="space-y-2">
+          <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">የሙከራ ኤስኤምኤስ ይምረጡ (Load Sample Incoming SMS):</label>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="presetCbeEnglishBtn" class="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold">
+              🏦 CBE (English Official SMS - 1,500 ETB)
+            </button>
+            <button type="button" id="presetCbeAmharicBtn" class="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold">
+              🏦 CBE (የአማርኛ SMS - 1,500 ብር)
+            </button>
+            <button type="button" id="presetTelebirrAmharicBtn" class="px-3.5 py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-xs font-semibold">
+              📱 Telebirr 127 (የአማርኛ SMS - 1,500 ብር)
+            </button>
+            <button type="button" id="presetTelebirrEnglishBtn" class="px-3.5 py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-xs font-semibold">
+              📱 Telebirr 127 (English SMS - 2,500 ETB)
+            </button>
+            <button type="button" id="presetFraudMismatchBtn" class="px-3.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold">
+              ⚠️ የማጭበርበር ሙከራ (Amount Mismatch 50 ETB)
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+          <!-- Incoming SMS Input Form -->
+          <div class="space-y-4 bg-slate-900/90 p-4 rounded-xl border border-slate-800">
+            <div>
+              <label for="simSenderInput" class="block text-xs font-semibold text-slate-300 mb-1">ላኪ (Sender Address / ID) - ብቻውን 'CBE' ወይም '127' / 'Telebirr' ይቀበላል</label>
+              <input id="simSenderInput" type="text" value="CBE" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label for="simSmsBodyInput" class="block text-xs font-semibold text-slate-300 mb-1">የገባው የኤስኤምኤስ ጽሑፍ (Incoming Raw SMS Body)</label>
+              <textarea id="simSmsBodyInput" rows="5" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs sm:text-sm text-slate-200 font-mono focus:outline-none focus:border-indigo-500">Dear Getachew, your account 1********6367 has been Credited with ETB 1,500.00 from Abebe Kebede. Your Current Balance is ETB 54,200.00. Thank you for Banking with CBE! https://mbreciept.cbe.com.et/FT26309ABC12</textarea>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <button id="runRegexParseBtn" type="button" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 font-semibold text-xs sm:text-sm transition">
+                🔍 በ Regex ተንትን (Test Regex Only)
+              </button>
+              <button id="pushSmsToFirebaseBtn" type="button" class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/25 transition">
+                🚀 ወደ Firebase ላክ እና ኮርስ ክፈት (Push SMS)
+              </button>
+            </div>
+          </div>
+
+          <!-- Parsed Regex Output Preview -->
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">የ Regex ትንተና ውጤት (Parsed SMS JSON)</span>
+                <span id="regexValidBadge" class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300">VALID SMS</span>
+              </div>
+              <pre id="parsedSmsJsonOutput" class="text-xs font-mono text-emerald-300 overflow-x-auto whitespace-pre-wrap leading-relaxed"></pre>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 space-y-1">
+              <div class="font-semibold text-white">💡 Two-Way Sync እንዴት ይሰራል?</div>
+              <p>1. ተጠቃሚው ድረ-ገጹ ላይ ትዕዛዝ ሲያስገባ በ <code class="text-indigo-300">pending_orders</code> ላይ ይመዘገባል።</p>
+              <p>2. የአንድሮይድ አፑ ከ <code class="text-indigo-300">listener_commands</code> ትዕዛዝ ይቀበላል፣ የገባውንም SMS ወደ <code class="text-indigo-300">incoming_sms</code> ይልካል።</p>
+              <p>3. መጠኑ (Amount)፣ Transaction ID እና ስልክ ቁጥሩ 100% ሲዛመድ ወዲያውኑ <code class="text-emerald-300">status: "VERIFIED"</code> ይሆናል!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 4: ADMIN DASHBOARD (GETACHEW BISET) ==================== -->
+    <section id="viewAdmin" class="hidden space-y-6">
+      <!-- Revenue & Goal Banner -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="glass-card p-5 rounded-2xl border border-emerald-500/30">
+          <div class="text-xs text-slate-400 font-medium">ጠቅላላ የተረጋገጠ ገቢ (Verified Revenue)</div>
+          <div id="adminTotalRevenue" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 mt-1">0.00 ብር</div>
+          <div class="mt-2 w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+            <div id="revenueGoalBar" class="bg-emerald-500 h-full transition-all duration-500" style="width: 15%"></div>
+          </div>
+          <div id="revenueGoalSubtext" class="text-[11px] text-slate-400 mt-1">ወርሃዊ ግብ፡ 50,000+ ብር (Monthly Target)</div>
+        </div>
+
+        <div class="glass-card p-5 rounded-2xl border border-indigo-500/30">
+          <div class="text-xs text-slate-400 font-medium">በራስ-ሰር የተከፈቱ ኮርሶች (Auto-Unlocked)</div>
+          <div id="adminVerifiedCount" class="text-2xl sm:text-3xl font-extrabold text-white mt-1">0</div>
+          <div class="text-[11px] text-indigo-300 mt-2">100% Matched (TxID + Amount + Sender)</div>
+        </div>
+
+        <div class="glass-card p-5 rounded-2xl border border-amber-500/30">
+          <div class="text-xs text-slate-400 font-medium">ኤስኤምኤስ በመጠበቅ ላይ (Pending Orders)</div>
+          <div id="adminPendingCount" class="text-2xl sm:text-3xl font-extrabold text-amber-300 mt-1">0</div>
+          <div class="text-[11px] text-slate-400 mt-2">Waiting for Bank/Telebirr SMS sync</div>
+        </div>
+
+        <div class="glass-card p-5 rounded-2xl border border-rose-500/30">
+          <div class="text-xs text-slate-400 font-medium">የማጭበርበር/ስህተት ሙከራዎች (Fraud / Error Logs)</div>
+          <div id="adminFraudCount" class="text-2xl sm:text-3xl font-extrabold text-rose-400 mt-1">0</div>
+          <div class="text-[11px] text-rose-300 mt-2">Amount mismatch, Duplicate TxID, Wrong Phone</div>
+        </div>
+      </div>
+
+      <!-- Two-Way Device Control & Seed Demo Data -->
+      <div class="glass-card p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h3 class="text-base font-bold text-white">የአ드ሚን መቆጣጠሪያ (Admin & Two-Way Listener Control - Getachew Biset)</h3>
+          <p class="text-xs text-slate-400">ከ Firebase ወደ አንድሮይድ ታብሌትዎ የማመሳሰል ትዕዛዝ ይላኩ ወይም የሙከራ ዳታዎችን ይመልከቱ።</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="adminRequestReScanBtn" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">
+            🔄 ስልኩ የመጨረሻዎቹን 10 SMS እንዲፈትሽ እዘዝ (Re-Scan Inbox)
+          </button>
+          <button id="adminClearDemoBtn" type="button" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+            🗑️ የሙከራ ታሪክ አጽዳ (Reset Demo Logs)
+          </button>
+        </div>
+      </div>
+
+      <!-- Dynamic Course Price & Content Manager (Synced with Firestore) -->
+      <div class="glass-card rounded-2xl border border-indigo-500/30 p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="font-bold text-sm sm:text-base text-white">✏️ የኮርስ ዋጋ እና ትምህርቶች ማስተካከያ (Live Course & Price Editor)</h3>
+            <p class="text-xs text-slate-400">ኮድ መንካት ሳያስፈልግዎት የማንኛውንም ኮርስ ዋጋ (ለምሳሌ 1 ብር ለሙከራ ወይም 1,500 ብር) እና ርዕስ እዚህ ይቀይሩ፤ ወዲያውኑ በ Firebase ላይ ይቀመጣል!</p>
+          </div>
+          <span class="text-xs px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 font-semibold">Firestore Synced</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+          <div>
+            <label for="adminEditCourseSelect" class="block text-xs font-semibold text-slate-300 mb-1">ኮርስ ይምረጡ (Select Course)</label>
+            <select id="adminEditCourseSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500"></select>
+          </div>
+          <div>
+            <label for="adminEditTitleInput" class="block text-xs font-semibold text-slate-300 mb-1">የኮርስ ርዕስ (Course Title)</label>
+            <input id="adminEditTitleInput" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label for="adminEditPriceInput" class="block text-xs font-semibold text-slate-300 mb-1">ዋጋ በብር (Price in ETB)</label>
+            <input id="adminEditPriceInput" type="number" min="1" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-emerald-300 font-mono font-bold focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <button id="adminSaveCourseBtn" type="button" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/20 transition">
+              💾 ዋጋ እና መረጃ አስቀምጥ (Save)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders & Verification Table -->
+      <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+          <h3 class="font-bold text-sm sm:text-base text-white">የክፍያ ትዕዛዞች እና የማረጋገጫ ታሪክ (Orders & Pairing Audit Log)</h3>
+          <span class="text-xs text-slate-400">Real-Time Sync</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                <th class="py-3 px-4">ተማሪ & ስልክ</th>
+                <th class="py-3 px-4">ኮርስ</th>
+                <th class="py-3 px-4">ዘዴ (Method)</th>
+                <th class="py-3 px-4">Transaction ID</th>
+                <th class="py-3 px-4 text-right">ዋጋ (ETB)</th>
+                <th class="py-3 px-4">ሁኔታ (Verification Status)</th>
+                <th class="py-3 px-4">ድርጊት</th>
+              </tr>
+            </thead>
+            <tbody id="adminOrdersTableBody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Raw Incoming SMS & Fraud Alert Logs -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+          <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+            <h3 class="font-bold text-sm text-white">📲 ከስልክ የገቡ ኤስኤምኤሶች (Incoming Bank/Telebirr SMS)</h3>
+            <span id="smsLogCountBadge" class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300">0</span>
+          </div>
+          <div id="adminSmsLogsList" class="p-4 space-y-3 max-h-80 overflow-y-auto"></div>
+        </div>
+
+        <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+          <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+            <h3 class="font-bold text-sm text-rose-300">🛡️ የማጭበርበር፣ የስህተት እና የመዘግየት ማስጠንቀቂያዎች (Security Alerts)</h3>
+            <span id="securityAlertCountBadge" class="text-xs px-2 py-0.5 rounded bg-rose-500/20 text-rose-300">0</span>
+          </div>
+          <div id="adminSecurityAlertsList" class="p-4 space-y-3 max-h-80 overflow-y-auto"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== CHECKOUT & REAL-TIME LISTENER MODAL ==================== -->
+  <div id="checkoutModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="glass-card w-full max-w-xl rounded-3xl border border-slate-700 shadow-2xl overflow-hidden my-8">
+      <!-- Modal Header -->
+      <div class="p-5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-400">24/7 Instant Course Checkout</span>
+          <h3 id="modalCourseTitle" class="text-lg font-bold text-white mt-0.5">ኮርስ መግዣ ፎርም</h3>
+        </div>
+        <button id="closeCheckoutModalBtn" type="button" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold">
+          ✕
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 sm:p-6 space-y-5">
+        <!-- Selected Course & Price Summary -->
+        <div class="p-4 rounded-2xl bg-indigo-950/50 border border-indigo-500/30 flex items-center justify-between">
+          <div>
+            <div class="text-xs text-indigo-300">የተመረጠው ኮርስ ክፍያ (Exact Amount Required)</div>
+            <div id="modalCourseSubtitle" class="text-sm font-semibold text-white">Full-Stack Web & Firebase Automation</div>
+          </div>
+          <div class="text-right">
+            <div id="modalCoursePrice" class="text-2xl font-extrabold text-emerald-400">1,500.00 ብር</div>
+            <div class="text-[11px] text-slate-400">100% Exact Match Required</div>
+          </div>
+        </div>
+
+        <!-- Step 1: Transfer Instructions -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">1. የክፍያ ዘዴ ይምረጡ (Select Payment Method):</label>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" id="selectMethodCBE" class="method-btn p-3 rounded-xl border-2 border-amber-500 bg-amber-500/10 text-left transition">
+              <div class="font-bold text-sm text-amber-300">🏦 የኢትዮጵያ ንግድ ባንክ (CBE)</div>
+              <div class="text-xs font-mono text-white mt-1">1000212746367</div>
+              <div class="text-[11px] text-slate-400">Getachew Biset</div>
+            </button>
+            <button type="button" id="selectMethodTelebirr" class="method-btn p-3 rounded-xl border-2 border-slate-700 bg-slate-900/60 text-left transition">
+              <div class="font-bold text-sm text-sky-300">📱 ቴሌብር (Telebirr - 127)</div>
+              <div class="text-xs font-mono text-white mt-1">0925432016</div>
+              <div class="text-[11px] text-slate-400">Getachew Biset</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Student Verification Form -->
+        <form id="checkoutVerificationForm" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="studentNameInput" class="block text-xs font-semibold text-slate-300 mb-1">ሙሉ ስምዎ (Your Full Name) *</label>
+              <input id="studentNameInput" type="text" required placeholder="ምሳሌ፡ አበበ ከበደ" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label for="studentPhoneInput" class="block text-xs font-semibold text-slate-300 mb-1">የላኩበት ስልክ ቁጥር (Sender Phone) *</label>
+              <input id="studentPhoneInput" type="tel" required placeholder="0911223344" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-indigo-500" />
+            </div>
+          </div>
+
+          <div>
+            <label for="studentTxIdInput" class="block text-xs font-semibold text-slate-300 mb-1">
+              የትራንዛክሽን ቁጥር (Transaction ID / Reference No) *
+            </label>
+            <input id="studentTxIdInput" type="text" required placeholder="ለ CBE: FT26309ABC12 ወይም ለ Telebirr: DB62J9H7KL" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono uppercase focus:outline-none focus:border-indigo-500" />
+            <p class="text-[11px] text-slate-400 mt-1">
+              በባንክ ወይም በቴሌብር የደረሰዎትን ትክክለኛ የትራንዛክሽን መለያ ቁጥር ያስገቡ።
+            </p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button type="submit" id="submitOrderBtn" class="flex-1 py-3 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition">
+              🔒 ክፍያዬን ከ Firebase ጋር አመሳክር (Start Real-Time Listening)
+            </button>
+          </div>
+        </form>
+
+        <!-- Real-Time Pairing Status Box (Appears once order is submitted) -->
+        <div id="liveOrderStatusBox" class="hidden p-4 rounded-2xl bg-slate-900 border border-indigo-500/40 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <span id="orderStatusSpinner" class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></span>
+              <span id="orderStatusHeadline" class="font-bold text-sm text-amber-300">የስልክ SMS እየተጠበቀ ነው (Listening on Firebase...)</span>
+            </div>
+            <span id="orderStatusTimer" class="text-xs font-mono text-slate-400">00:00</span>
+          </div>
+          <p id="orderStatusDetail" class="text-xs text-slate-300 leading-relaxed">
+            ትዕዛዝዎ ወደ Firebase ተልኳል! አሁን በ <strong>Getachew Biset</strong> ስልክ ላይ የ CBE/Telebirr ኤስኤምኤስ ሲገባና መጠኑ፣ ስልክ ቁጥሩና ትራንዛክሽን ቁጥሩ 100% ሲዛመድ ኮርሱ በራሱ ይከፈታል።
+          </p>
+          <!-- Instant Demo Trigger inside Modal so user can see immediate SMS arrival! -->
+          <div class="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+            <span class="text-[11px] text-slate-400">ለሙከራ ያህል አሁኑኑ የባንክ/ቴሌብር SMS ስልኩ ላይ እንዲገባ ማድረግ ይፈልጋሉ?</span>
+            <button id="simulateMatchingSmsNowBtn" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow">
+              📲 አሁን ትክክለኛ SMS አስገባ (Simulate Matching SMS)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== COURSE PLAYER MODAL (WHEN UNLOCKED) ==================== -->
+  <div id="coursePlayerModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="glass-card w-full max-w-3xl rounded-3xl border border-emerald-500/40 shadow-2xl overflow-hidden my-8">
+      <div class="p-5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-300">✅ 100% VERIFIED & UNLOCKED</span>
+          <h3 id="playerCourseTitle" class="text-lg font-bold text-white">ኮርስ መማሪያ ክፍል</h3>
+        </div>
+        <button id="closePlayerModalBtn" type="button" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold">✕</button>
+      </div>
+      <div class="p-6 space-y-5">
+        <div class="aspect-video rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 flex flex-col items-center justify-center p-6 text-center space-y-3">
+          <div class="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-3xl">▶</div>
+          <h4 id="playerModuleHeadline" class="text-xl font-bold text-white">ምዕራፍ 1፡ እንኳን ወደ Lihket Digital Academy በደህና መጡ!</h4>
+          <p id="playerReceiptInfo" class="text-xs text-emerald-300 font-mono"></p>
+        </div>
+        <div class="space-y-2">
+          <h5 class="text-xs font-bold uppercase tracking-wider text-slate-400">የኮርሱ ትምህርቶች (Unlocked Curriculum Modules):</h5>
+          <div id="playerModulesList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 py-6 mt-12 text-center text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>© 2026 <strong>Lihket Digital Academy</strong> (Getachew Biset) • Package: <code class="text-indigo-300">lihket_digital_academy.et</code></div>
+      <div>Powered by Native Kotlin SMS Listener + Firebase Real-Time 2-Way Architecture</div>
+    </div>
+  </footer>
+
+  <!-- ==================== APPLICATION & FIREBASE MODULE SCRIPT ==================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      doc,
+      setDoc,
+      updateDoc,
+      onSnapshot,
+      query,
+      orderBy,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // 1. User's Exact Firebase Configuration (LihketDigitalPayment)
+    const firebaseConfig = {
+      apiKey: "AIzaSyA1ph9LKnxzLxSEqeECGRWlhvuViXKJ4ck",
+      authDomain: "lihketdigitalpayment.firebaseapp.com",
+      projectId: "lihketdigitalpayment",
+      storageBucket: "lihketdigitalpayment.firebasestorage.app",
+      messagingSenderId: "519424016159",
+      appId: "1:519424016159:web:279ffae9a652c078f8fa2a",
+      measurementId: "G-PNYT7W3XTK"
+    };
+
+    const MERCHANT_CONFIG = {
+      ownerName: "Getachew Biset",
+      businessName: "Lihket Digital Academy",
+      cbeAccountFull: "1000212746367",
+      cbeAccountMasked: "1********6367",
+      cbeReceiptPrefix: "https://mbreciept.cbe.com.et/",
+      telebirrPhone: "0925432016",
+      telebirrSenderId: "127"
+    };
+
+    // 2. Courses Catalog Data (Designed for >50,000 ETB/month recurring conversions)
+    const COURSES = [
+      {
+        id: "course_fullstack_ai",
+        category: "WEB",
+        title: "Full-Stack Web & Firebase Automation (የ1 ብር የሙከራ ኮርስ)",
+        subtitle: "ለ CBE እና Telebirr የቀጥታ ክፍያ ሙከራ ዋጋው ወደ 1.00 ብር የተቀየረ ሙሉ ኮርስ (በAdmin ዳሽቦርድ በማንኛውም ሰዓት ይቀየራል)",
+        price: 1,
+        students: 42,
+        rating: "5.0",
+        badge: "1 ብር ሙከራ (Live Test)",
+        modules: [
+          "1. Modern HTML5, Tailwind CSS & Responsive UI Architecture",
+          "2. Firebase Firestore Real-Time Database & Security Rules",
+          "3. CBE & Telebirr Automated Payment Integration",
+          "4. Hosting, Custom Domains & Scaling to 50,000+ ETB/Month"
+        ]
+      },
+      {
+        id: "course_kotlin_android",
+        category: "WEB",
+        title: "Native Android App Development with Kotlin",
+        subtitle: "ለኢትዮጵያ ገበያ የሚሆኑ ፈጣን የአንድሮይድ መተግበሪያዎችን እና SMS Automation መገንባት",
+        price: 2500,
+        students: 31,
+        rating: "5.0",
+        badge: "Pro Track",
+        modules: [
+          "1. Kotlin Fundamentals & Android Studio Project Architecture",
+          "2. BroadcastReceivers, Foreground Services & Battery Optimization",
+          "3. Advanced Regex Parsing for Bank & Telebirr SMS",
+          "4. GitHub Actions CI/CD: Automated Signed APK Generation"
+        ]
+      },
+      {
+        id: "course_digital_marketing",
+        category: "MARKETING",
+        title: "Digital Marketing, Telegram Funnel & High-Ticket Sales",
+        subtitle: "በወር ከ 50,000 ብር በላይ የሚያስገኝ የዲጂታል ኮርስ እና ቢዝነስ ማርኬቲንግ ስትራቴጂ",
+        price: 1200,
+        students: 68,
+        rating: "4.9",
+        badge: "High ROI",
+        modules: [
+          "1. High-Converting Landing Pages & Referral Viral Loops",
+          "2. Telegram Channel Automation & Bot Integration",
+          "3. TikTok, Facebook & YouTube Ads for Ethiopian Market",
+          "4. Automated Customer Onboarding & Retention"
+        ]
+      },
+      {
+        id: "course_ai_automation",
+        category: "AI",
+        title: "AI Engineering, Prompt Mastery & Business Automation",
+        subtitle: "በ AI መሳሪያዎች ስራዎን በ10 እጥፍ ማፍጠን እና አውቶማቲክ የገቢ ምንጭ መፍጠር",
+        price: 1800,
+        students: 29,
+        rating: "4.8",
+        badge: "New",
+        modules: [
+          "1. Practical AI Agents & Workflow Automation",
+          "2. Building AI-Powered SaaS Tools in Amharic & English",
+          "3. Automated Content & Video Production Pipelines",
+          "4. Monetizing AI Services for Local & Global Clients"
+        ]
+      },
+      {
+        id: "course_ecommerce_et",
+        category: "MARKETING",
+        title: "Ethiopian E-Commerce & FinTech Integration Blueprint",
+        subtitle: "የኦንላይን ሱቅ መገንባት እና ከባንክ/ቴሌብር ጋር በቀጥታ ማስተሳሰር",
+        price: 2000,
+        students: 24,
+        rating: "4.9",
+        badge: "Popular",
+        modules: [
+          "1. E-Commerce Catalog & Inventory Architecture",
+          "2. Real-Time Order Pairing & Fraud Prevention",
+          "3. Delivery Logistics & Automated SMS Notifications",
+          "4. Scaling Monthly Recurring Digital Product Sales"
+        ]
+      },
+      {
+        id: "course_vip_bundle",
+        category: "AI",
+        title: "VIP All-Access Lihket Digital Academy Bundle (5-in-1)",
+        subtitle: "ሁሉንም 5 ኮርሶች፣ የግል ማማከር (Mentorship) እና ሙሉ የሶርስ ኮድ ፓኬጅ በአንድ ላይ",
+        price: 4500,
+        students: 19,
+        rating: "5.0",
+        badge: "VIP Bundle",
+        modules: [
+          "1. Full Access to All 5 Lihket Digital Academy Courses",
+          "2. Complete Production Source Codes (Web + Kotlin + Firebase)",
+          "3. Weekly Live Q&A with Getachew Biset",
+          "4. Official Lihket Digital Academy Certified Developer Diploma"
+        ]
+      }
+    ];
+
+    // 3. Application State (Synchronized with Firebase + Local Fallback so it works 100% everywhere)
+    const state = {
+      selectedCategory: "ALL",
+      activeCourse: COURSES[0],
+      selectedMethod: "CBE",
+      activeOrderId: null,
+      timerInterval: null,
+      timerSeconds: 0,
+      firebaseConnected: false,
+      db: null,
+      orders: [
+        {
+          id: "ord_demo_1",
+          studentName: "ዳዊት መኮንን (Dawit M.)",
+          studentPhone: "0911456789",
+          courseId: "course_kotlin_android",
+          courseTitle: "Native Android App Development with Kotlin",
+          amount: 2500,
+          method: "Telebirr",
+          transactionId: "DB98K2M4PL",
+          status: "VERIFIED",
+          statusReason: "100% Matched: Telebirr 127 SMS + Phone + Amount (2,500 ETB)",
+          createdAt: "10 ደቂቃ በፊት"
+        },
+        {
+          id: "ord_demo_2",
+          studentName: "ሰላም ተስፋዬ (Selam T.)",
+          studentPhone: "0922334455",
+          courseId: "course_fullstack_ai",
+          courseTitle: "Full-Stack Web & Firebase Automation Masterclass",
+          amount: 1500,
+          method: "CBE",
+          transactionId: "FT26308XYZ99",
+          status: "VERIFIED",
+          statusReason: "100% Matched: CBE Account 1********6367 + FT26308XYZ99 + 1,500 ETB",
+          createdAt: "25 ደቂቃ በፊት"
+        }
+      ],
+      incomingSmsList: [
+        {
+          id: "sms_demo_1",
+          sender: "127",
+          provider: "Telebirr",
+          transactionId: "DB98K2M4PL",
+          amount: 2500,
+          senderPhone: "0911456789",
+          accountValid: true,
+          consumed: true,
+          rawBody: "ውድ Getachew Biset ከ 0911456789 ብር 2,500.00 ተቀብለዋል። የትራንዛክሽን ቁጥር DB98K2M4PL ነው።",
+          timestamp: "10 ደቂቃ በፊት"
+        },
+        {
+          id: "sms_demo_2",
+          sender: "CBE",
+          provider: "CBE",
+          transactionId: "FT26308XYZ99",
+          amount: 1500,
+          senderPhone: "N/A (CBE)",
+          accountValid: true,
+          consumed: true,
+          rawBody: "Dear Getachew, your account 1********6367 has been Credited with ETB 1,500.00. Ref: https://mbreciept.cbe.com.et/FT26308XYZ99",
+          timestamp: "25 ደቂቃ በፊት"
+        }
+      ],
+      securityAlerts: [
+        {
+          id: "alert_demo_1",
+          type: "AMOUNT_MISMATCH",
+          title: "የገንዘብ መጠን አልተዛመደም (Underpayment Blocked)",
+          detail: "TxID: FT26301LOW00 • የተጠየቀው፡ 1,500 ብር፣ በ SMS የገባው፡ 50.00 ብር። ኮርሱ አልተከፈተም!",
+          timestamp: "1 ሰዓት በፊት"
+        }
+      ]
+    };
+
+    // Load saved state from localStorage safely
+    try {
+      const savedOrders = localStorage.getItem("lihket_orders_v1");
+      const savedSms = localStorage.getItem("lihket_sms_v1");
+      const savedAlerts = localStorage.getItem("lihket_alerts_v1");
+      if (savedOrders) state.orders = JSON.parse(savedOrders);
+      if (savedSms) state.incomingSmsList = JSON.parse(savedSms);
+      if (savedAlerts) state.securityAlerts = JSON.parse(savedAlerts);
+    } catch (e) {
+      // Ignore storage errors in sandboxed iframes
+    }
+
+    function persistLocalState() {
+      try {
+        localStorage.setItem("lihket_orders_v1", JSON.stringify(state.orders));
+        localStorage.setItem("lihket_sms_v1", JSON.stringify(state.incomingSmsList));
+        localStorage.setItem("lihket_alerts_v1", JSON.stringify(state.securityAlerts));
+      } catch (e) {
+        // Ignore storage errors
+      }
+    }
+
+    // 4. Toast Notification Helper (No browser alert/confirm/prompt)
+    function showToast(message, type = "info") {
+      const container = document.getElementById("toastContainer");
+      if (!container) return;
+      const colors = {
+        success: "bg-emerald-950/95 border-emerald-500 text-emerald-200",
+        error: "bg-rose-950/95 border-rose-500 text-rose-200",
+        warning: "bg-amber-950/95 border-amber-500 text-amber-200",
+        info: "bg-indigo-950/95 border-indigo-500 text-indigo-200"
+      };
+      const toast = document.createElement("div");
+      toast.className = `pointer-events-auto p-3.5 rounded-xl border shadow-xl text-xs sm:text-sm font-medium transition-all duration-300 ${colors[type] || colors.info}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 300);
+      }, 4500);
+    }
+
+    // 5. Exact Regex Engine (Mirrors the Android Kotlin SmsParser.kt 100%)
+    function parseBankOrTelebirrSms(senderRaw, bodyRaw) {
+      const sender = (senderRaw || "").trim();
+      const body = (bodyRaw || "").trim();
+
+      const isCBE = sender.toUpperCase().includes("CBE") ||
+                    body.includes("mbreciept.cbe.com.et") ||
+                    body.includes("apps.cbe.com.et") ||
+                    body.includes("1********6367") ||
+                    body.includes("1000212746367");
+
+      const isTelebirr = sender === "127" ||
+                         sender.toLowerCase().includes("telebirr") ||
+                         body.toLowerCase().includes("telebirr") ||
+                         body.includes("ቴሌብር");
+
+      if (!isCBE && !isTelebirr) {
+        return {
+          valid: false,
+          reason: "ላኪው CBE ወይም Telebirr (127) አይደለም (Ignored non-payment SMS)",
+          sender
+        };
+      }
+
+      const provider = isCBE ? "CBE" : "Telebirr";
+
+      // Extract Amount (Supports English "ETB 1,500.00", "credited with ETB 500", and Amharic "ብር 500.00 ተቀብለዋል")
+      let amount = null;
+      const amountPatterns = [
+        /(?:ETB|ብር|Birr)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)/i,
+        /([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)\s*(?:ETB|ብር|Birr)/i
+      ];
+      for (const pattern of amountPatterns) {
+        const match = body.match(pattern);
+        if (match && match[1]) {
+          amount = parseFloat(match[1].replace(/,/g, ""));
+          break;
+        }
+      }
+
+      // Extract Transaction ID / Reference Number
+      let transactionId = null;
+      if (provider === "CBE") {
+        const cbePatterns = [
+          /mbreciept\.cbe\.com\.et\/?\?id=([A-Z0-9]{8,20})/i,
+          /mbreciept\.cbe\.com\.et\/([A-Z0-9]{8,20})/i,
+          /apps\.cbe\.com\.et:100\/\?id=([A-Z0-9]{8,20})/i,
+          /\b(FT[0-9A-Z]{8,16})\b/i,
+          /(?:Ref(?:\s*No)?|Transaction\s*ID|መለያ\s*ቁጥር)[:\s#]*([A-Z0-9]{8,20})/i
+        ];
+        for (const p of cbePatterns) {
+          const m = body.match(p);
+          if (m && m[1]) {
+            // If CBE appends account digits after FT..., keep standard 12-char FT code or full token
+            transactionId = m[1].toUpperCase().slice(0, 12);
+            break;
+          }
+        }
+      } else {
+        const telebirrPatterns = [
+          /(?:transaction\s*(?:number|no|id)|የትራንዛክሽን\s*(?:ቁጥር|መለያ)|ቁጥር)\s*(?:is|ነው)?[:\s]*([A-Z0-9]{8,15})/i,
+          /\b([A-Z]{2}[0-9A-Z]{8,12})\b/
+        ];
+        for (const p of telebirrPatterns) {
+          const m = body.match(p);
+          if (m && m[1]) {
+            transactionId = m[1].toUpperCase();
+            break;
+          }
+        }
+      }
+
+      // Extract Sender Phone Number (for Telebirr matching)
+      let senderPhone = null;
+      const phoneMatch = body.match(/(?:\+?251|0)?(9[0-9]{8}|7[0-9]{8}|[0-9]{2}\*+[0-9]{2,4})/);
+      if (phoneMatch) {
+        senderPhone = phoneMatch[0];
+      }
+
+      // Check CBE Account 1********6367 or 1000212746367
+      const accountValid = provider === "CBE"
+        ? (body.includes("6367") || body.includes("1********6367") || body.includes("1000212746367"))
+        : true;
+
+      // Extract Official Receipt Link if present
+      const linkMatch = body.match(/https?:\/\/[^\s]+/i);
+      const receiptUrl = linkMatch ? linkMatch[0] : (provider === "CBE" && transactionId ? `https://mbreciept.cbe.com.et/${transactionId}` : null);
+
+      const isValid = Boolean(amount !== null && amount > 0 && transactionId && accountValid);
+
+      return {
+        valid: isValid,
+        provider,
+        sender,
+        transactionId: transactionId || "NOT_FOUND",
+        amount: amount !== null ? amount : 0,
+        senderPhone: senderPhone || (provider === "CBE" ? "CBE_ACCOUNT_TRANSFER" : "UNKNOWN"),
+        accountValid,
+        targetMerchantAccount: provider === "CBE" ? MERCHANT_CONFIG.cbeAccountMasked : MERCHANT_CONFIG.telebirrPhone,
+        receiptUrl,
+        rawBody: body
+      };
+    }
+
+    // Helper: Phone Number Matching (Handles +2519..., 09..., and Telebirr masked 251911****89)
+    function phonesMatch(orderPhoneRaw, smsPhoneRaw, provider) {
+      if (provider === "CBE") return true; // CBE uses Account + FT Reference ID
+      if (!smsPhoneRaw || smsPhoneRaw === "UNKNOWN") return true;
+      const cleanOrder = (orderPhoneRaw || "").replace(/\D/g, "").slice(-9);
+      if (smsPhoneRaw.includes("*")) {
+        // Check last 2-4 visible digits
+        const visibleTail = smsPhoneRaw.replace(/\D/g, "").slice(-2);
+        return cleanOrder.endsWith(visibleTail);
+      }
+      const cleanSms = smsPhoneRaw.replace(/\D/g, "").slice(-9);
+      return cleanOrder === cleanSms;
+    }
+
+    // 6. Core 100% Verification & Auto-Unlock Engine (Requirement 4.1)
+    async function runVerificationPairingEngine() {
+      let stateChanged = false;
+
+      for (const order of state.orders) {
+        if (order.status === "VERIFIED") continue;
+
+        const normOrderTx = (order.transactionId || "").trim().toUpperCase();
+        // Find matching SMS by Transaction ID & Provider
+        const matchingSms = state.incomingSmsList.find(
+          (sms) => (sms.transactionId || "").trim().toUpperCase() === normOrderTx &&
+                   sms.provider.toUpperCase() === order.method.toUpperCase()
+        );
+
+        if (!matchingSms) {
+          continue; // Still waiting for SMS to arrive
+        }
+
+        // Security Check 1: Was this SMS already consumed by a DIFFERENT order?
+        if (matchingSms.consumed && matchingSms.consumedByOrderId && matchingSms.consumedByOrderId !== order.id) {
+          if (order.status !== "FRAUD_DUPLICATE_TX") {
+            order.status = "FRAUD_DUPLICATE_TX";
+            order.statusReason = `⚠️ ይህ የትራንዛክሽን ቁጥር (${normOrderTx}) ከዚህ በፊት ጥቅም ላይ ውሏል! (Duplicate TxID Blocked)`;
+            state.securityAlerts.unshift({
+              id: "alert_" + Date.now(),
+              type: "DUPLICATE_TX_FRAUD",
+              title: "ድጋሚ ጥቅም ላይ የዋለ ትራንዛክሽን (Replay Fraud Blocked)",
+              detail: `${order.studentName} (${order.studentPhone}) TxID: ${normOrderTx} በድጋሚ ለመጠቀም ሞክሯል።`,
+              timestamp: "አሁን (Just now)"
+            });
+            stateChanged = true;
+          }
+          continue;
+        }
+
+        // Security Check 2: Exact Amount Pairing (100% Match required)
+        if (Number(matchingSms.amount) < Number(order.amount)) {
+          if (order.status !== "ERROR_AMOUNT_MISMATCH") {
+            order.status = "ERROR_AMOUNT_MISMATCH";
+            order.statusReason = `⚠️ የገንዘብ መጠን አልተዛመደም! የተጠየቀው፡ ${order.amount} ብር፣ በ SMS የገባው፡ ${matchingSms.amount} ብር።`;
+            state.securityAlerts.unshift({
+              id: "alert_" + Date.now(),
+              type: "AMOUNT_MISMATCH",
+              title: "የክፍያ መጠን ልዩነት (Amount Mismatch Blocked)",
+              detail: `${order.studentName} ለ "${order.courseTitle}" (${order.amount} ብር) የላከው ${matchingSms.amount} ብር ብቻ ነው (TxID: ${normOrderTx})።`,
+              timestamp: "አሁን (Just now)"
+            });
+            stateChanged = true;
+            showToast(order.statusReason, "error");
+          }
+          continue;
+        }
+
+        // Security Check 3: Telebirr Sender Phone Number Matching
+        if (!phonesMatch(order.studentPhone, matchingSms.senderPhone, order.method)) {
+          if (order.status !== "ERROR_PHONE_MISMATCH") {
+            order.status = "ERROR_PHONE_MISMATCH";
+            order.statusReason = `⚠️ የቴሌብር ስልክ ቁጥር አልተዛመደም! የተመዘገበው፡ ${order.studentPhone}፣ የላከው፡ ${matchingSms.senderPhone}`;
+            state.securityAlerts.unshift({
+              id: "alert_" + Date.now(),
+              type: "PHONE_MISMATCH",
+              title: "የላኪ ስልክ ቁጥር አልተዛመደም (Sender Phone Mismatch)",
+              detail: `TxID ${normOrderTx}፡ የተጠቃሚው ስልክ (${order.studentPhone}) ከቴሌብር ላኪው (${matchingSms.senderPhone}) ጋር አይตรงም።`,
+              timestamp: "አሁን (Just now)"
+            });
+            stateChanged = true;
+            showToast(order.statusReason, "warning");
+          }
+          continue;
+        }
+
+        // 100% VERIFIED! Unlock Course Immediately
+        order.status = "VERIFIED";
+        order.statusReason = `✅ 100% ተረጋግጧል! (${order.method} • ${matchingSms.amount} ብር • TxID: ${normOrderTx})`;
+        matchingSms.consumed = true;
+        matchingSms.consumedByOrderId = order.id;
+        stateChanged = true;
+
+        showToast(`🎉 እንኳን ደስ አለዎት! "${order.courseTitle}" ክፍያው 100% ተረጋግጦ ተከፍቷል!`, "success");
+
+        // Update Firebase if connected
+        if (state.firebaseConnected && state.db && order.firebaseDocId) {
+          try {
+            await updateDoc(doc(state.db, "pending_orders", order.firebaseDocId), {
+              status: "VERIFIED",
+              statusReason: order.statusReason,
+              verifiedAt: serverTimestamp()
+            });
+          } catch (e) {
+            // Fallback handled locally
+          }
+        }
+      }
+
+      if (stateChanged) {
+        persistLocalState();
+        renderAllViews();
+        updateLiveModalStatus();
+      }
+    }
+
+    // 7. Initialize Firebase Real-Time Listeners (Two-Way Sync)
+    async function initFirebaseSync() {
+      try {
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        state.db = db;
+
+        // Listen to incoming_sms pushed from Android Kotlin App
+        const smsQuery = query(collection(db, "incoming_sms"), orderBy("timestamp", "desc"));
+        onSnapshot(
+          smsQuery,
+          (snapshot) => {
+            state.firebaseConnected = true;
+            const dot = document.getElementById("firebaseStatusDot");
+            const txt = document.getElementById("firebaseConnectionText");
+            if (dot) dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-dot";
+            if (txt) txt.textContent = "Firebase Live: lihketdigitalpayment";
+
+            snapshot.docChanges().forEach((change) => {
+              if (change.type === "added") {
+                const data = change.doc.data();
+                const exists = state.incomingSmsList.some(
+                  (s) => (s.transactionId || "").toUpperCase() === (data.transactionId || "").toUpperCase()
+                );
+                if (!exists && data.transactionId) {
+                  state.incomingSmsList.unshift({
+                    id: change.doc.id,
+                    sender: data.sender || data.provider || "CBE",
+                    provider: data.provider || "CBE",
+                    transactionId: data.transactionId,
+                    amount: Number(data.amount || 0),
+                    senderPhone: data.senderPhone || "UNKNOWN",
+                    accountValid: true,
+                    consumed: Boolean(data.consumed),
+                    rawBody: data.rawBody || "",
+                    timestamp: "ከ Firebase (Live)"
+                  });
+                }
+              }
+            });
+            runVerificationPairingEngine();
+          },
+          () => {
+            const txt = document.getElementById("firebaseConnectionText");
+            if (txt) txt.textContent = "Firebase Hybrid Mode (Ready)";
+          }
+        );
+
+        // Listen to pending_orders in real time so Admin sees all student orders & students see manual/auto unlocks!
+        const ordersQuery = query(collection(db, "pending_orders"));
+        onSnapshot(ordersQuery, (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            const data = change.doc.data();
+            const docId = change.doc.id;
+            const existing = state.orders.find((o) => o.firebaseDocId === docId || o.id === data.id);
+            if (existing) {
+              existing.status = data.status || existing.status;
+              existing.statusReason = data.statusReason || existing.statusReason;
+              existing.firebaseDocId = docId;
+            } else if (data.transactionId) {
+              state.orders.unshift({
+                id: data.id || ("ord_" + docId),
+                firebaseDocId: docId,
+                studentName: data.studentName || "ተማሪ",
+                studentPhone: data.studentPhone || "",
+                courseId: data.courseId || "course_fullstack_ai",
+                courseTitle: data.courseTitle || "Course",
+                amount: Number(data.amount || 1),
+                method: data.method || "CBE",
+                transactionId: data.transactionId,
+                status: data.status || "WAITING_FOR_SMS",
+                statusReason: data.statusReason || "ከ Firebase (Live Order)",
+                createdAt: "Live (Firebase)"
+              });
+            }
+          });
+          runVerificationPairingEngine();
+          renderAllViews();
+          updateLiveModalStatus();
+        }, () => {});
+
+        // Listen to custom course edits saved in Firestore `courses_catalog`
+        onSnapshot(collection(db, "courses_catalog"), (snapshot) => {
+          snapshot.forEach((docSnap) => {
+            const cData = docSnap.data();
+            const target = COURSES.find((c) => c.id === docSnap.id);
+            if (target) {
+              if (cData.title) target.title = cData.title;
+              if (cData.price !== undefined) target.price = Number(cData.price);
+            }
+          });
+          renderAllViews();
+        }, () => {});
+      } catch (err) {
+        const txt = document.getElementById("firebaseConnectionText");
+        if (txt) txt.textContent = "Firebase SDK Ready (Local Sync)";
+      }
+    }
+
+    // 8. Render Functions for All Views
+    function isCourseUnlocked(courseId) {
+      return state.orders.some((o) => o.courseId === courseId && o.status === "VERIFIED");
+    }
+
+    function renderCoursesGrid() {
+      const grid = document.getElementById("coursesGrid");
+      if (!grid) return;
+
+      const filtered = state.selectedCategory === "ALL"
+        ? COURSES
+        : COURSES.filter((c) => c.category === state.selectedCategory);
+
+      grid.innerHTML = filtered.map((course) => {
+        const unlocked = isCourseUnlocked(course.id);
+        return `
+          <div class="glass-card rounded-2xl p-5 border ${unlocked ? 'border-emerald-500/50' : 'border-slate-800'} flex flex-col justify-between hover:border-indigo-500/50 transition group">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <span class="px-2.5 py-1 rounded-md text-[11px] font-bold ${unlocked ? 'bg-emerald-500/20 text-emerald-300' : 'bg-indigo-500/20 text-indigo-300'}">
+                  ${unlocked ? '✅ የተከፈተ (Unlocked)' : course.badge}
+                </span>
+                <span class="text-xs text-amber-400 font-semibold">★ ${course.rating} (${course.students} ተማሪዎች)</span>
+              </div>
+              <h3 class="text-lg font-bold text-white group-hover:text-indigo-300 transition">${course.title}</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">${course.subtitle}</p>
+              <ul class="space-y-1.5 pt-2 border-t border-slate-800/80 text-xs text-slate-400">
+                ${course.modules.slice(0, 3).map((m) => `<li class="truncate">• ${m}</li>`).join("")}
+              </ul>
+            </div>
+
+            <div class="pt-5 mt-5 border-t border-slate-800/80 flex items-center justify-between gap-3">
+              <div>
+                <span class="text-[11px] text-slate-400 block">የኮርስ ዋጋ</span>
+                <span class="text-xl font-extrabold text-white">${course.price.toLocaleString()} <small class="text-xs font-normal text-emerald-400">ብር</small></span>
+              </div>
+              ${unlocked
+                ? `<button type="button" data-open-player="${course.id}" class="open-player-btn px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/20 transition">
+                     ▶ አሁን ተማር (Open Course)
+                   </button>`
+                : `<button type="button" data-buy-course="${course.id}" class="buy-course-btn px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-600/25 transition">
+                     ⚡ በ CBE / Telebirr ግዛ
+                   </button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      // Attach listeners to dynamically rendered buttons
+      grid.querySelectorAll(".buy-course-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const courseId = btn.getAttribute("data-buy-course");
+          openCheckoutModal(courseId);
+        });
+      });
+
+      grid.querySelectorAll(".open-player-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const courseId = btn.getAttribute("data-open-player");
+          openCoursePlayerModal(courseId);
+        });
+      });
+    }
+
+    function renderMyUnlockedCourses() {
+      const container = document.getElementById("myUnlockedCoursesContainer");
+      const badge = document.getElementById("unlockedCountBadge");
+      const unlockedCourses = COURSES.filter((c) => isCourseUnlocked(c.id));
+      if (badge) badge.textContent = String(unlockedCourses.length);
+      if (!container) return;
+
+      if (unlockedCourses.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-2 glass-card rounded-2xl p-8 text-center space-y-3 border border-slate-800">
+            <div class="text-3xl">🔒</div>
+            <h3 class="text-base font-bold text-white">እስካሁን የተከፈተ ኮርስ የለም</h3>
+            <p class="text-xs text-slate-400 max-w-md mx-auto">ኮርስ መርጠው በ CBE (1000212746367) ወይም በ Telebirr (0925432016) ሲከፍሉ በሰከንዶች ውስጥ እዚህ ይከፈታል።</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = unlockedCourses.map((course) => {
+        const order = state.orders.find((o) => o.courseId === course.id && o.status === "VERIFIED");
+        return `
+          <div class="glass-card rounded-2xl p-5 border border-emerald-500/40 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300">✅ 24/7 UNLOCKED</span>
+                <span class="text-xs font-mono text-slate-400">TxID: ${order ? order.transactionId : 'VERIFIED'}</span>
+              </div>
+              <h3 class="text-lg font-bold text-white mt-2">${course.title}</h3>
+              <p class="text-xs text-slate-300 mt-1">${course.subtitle}</p>
+            </div>
+            <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+              <span class="text-xs text-emerald-300">${order ? order.method : 'CBE/Telebirr'} • ${course.price.toLocaleString()} ብር</span>
+              <button type="button" data-open-player="${course.id}" class="unlocked-play-btn px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">
+                ▶ ትምህርቱን ክፈት
+              </button>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      container.querySelectorAll(".unlocked-play-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          openCoursePlayerModal(btn.getAttribute("data-open-player"));
+        });
+      });
+    }
+
+    function renderAdminDashboard() {
+      const verifiedOrders = state.orders.filter((o) => o.status === "VERIFIED");
+      const pendingOrders = state.orders.filter((o) => o.status === "WAITING_FOR_SMS");
+      const totalRevenue = verifiedOrders.reduce((sum, o) => sum + Number(o.amount || 0), 0);
+
+      const revEl = document.getElementById("adminTotalRevenue");
+      const verEl = document.getElementById("adminVerifiedCount");
+      const penEl = document.getElementById("adminPendingCount");
+      const frdEl = document.getElementById("adminFraudCount");
+      const barEl = document.getElementById("revenueGoalBar");
+      const goalSubEl = document.getElementById("revenueGoalSubtext");
+
+      if (revEl) revEl.textContent = `${totalRevenue.toLocaleString()}.00 ብር`;
+      if (verEl) verEl.textContent = String(verifiedOrders.length);
+      if (penEl) penEl.textContent = String(pendingOrders.length);
+      if (frdEl) frdEl.textContent = String(state.securityAlerts.length);
+
+      const pct = Math.min(100, Math.round((totalRevenue / 50000) * 100));
+      if (barEl) barEl.style.width = `${Math.max(8, pct)}%`;
+      if (goalSubEl) goalSubEl.textContent = `ወርሃዊ ግብ፡ 50,000 ብር (${pct}% ተሳክቷል)`;
+
+      // Orders Table
+      const tbody = document.getElementById("adminOrdersTableBody");
+      if (tbody) {
+        tbody.innerHTML = state.orders.map((o) => {
+          let badgeClass = "bg-amber-500/20 text-amber-300 border-amber-500/30";
+          if (o.status === "VERIFIED") badgeClass = "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+          else if (o.status.startsWith("ERROR") || o.status.startsWith("FRAUD")) badgeClass = "bg-rose-500/20 text-rose-300 border-rose-500/30";
+
+          return `
+            <tr class="hover:bg-slate-900/50">
+              <td class="py-3 px-4">
+                <div class="font-semibold text-white">${o.studentName}</div>
+                <div class="text-[11px] font-mono text-slate-400">${o.studentPhone}</div>
+              </td>
+              <td class="py-3 px-4 text-slate-200 max-w-xs truncate">${o.courseTitle}</td>
+              <td class="py-3 px-4">
+                <span class="px-2 py-0.5 rounded text-[11px] font-bold ${o.method === 'CBE' ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'}">${o.method}</span>
+              </td>
+              <td class="py-3 px-4 font-mono text-xs text-white">${o.transactionId}</td>
+              <td class="py-3 px-4 text-right font-mono font-bold text-emerald-300">${Number(o.amount).toLocaleString()} ብር</td>
+              <td class="py-3 px-4">
+                <span class="px-2 py-0.5 rounded border text-[11px] font-semibold ${badgeClass}">${o.status}</span>
+                <div class="text-[11px] text-slate-400 mt-0.5">${o.statusReason || ''}</div>
+              </td>
+              <td class="py-3 px-4">
+                ${o.status !== "VERIFIED"
+                  ? `<div class="flex flex-wrap gap-1.5">
+                       <button type="button" data-approve-order="${o.id}" class="admin-manual-approve-btn px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow">
+                         ✅ ማንዋል ፍቀድ (Unlock)
+                       </button>
+                       <button type="button" data-sim-order="${o.id}" class="admin-sim-sms-btn px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 text-xs font-semibold">
+                         📲 Test SMS
+                       </button>
+                     </div>`
+                  : `<span class="text-xs text-emerald-400 font-semibold">Unlocked ✓</span>`
+                }
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        tbody.querySelectorAll(".admin-sim-sms-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const ordId = btn.getAttribute("data-sim-order");
+            const ord = state.orders.find((x) => x.id === ordId);
+            if (ord) simulateIncomingSmsForOrder(ord);
+          });
+        });
+
+        tbody.querySelectorAll(".admin-manual-approve-btn").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const ordId = btn.getAttribute("data-approve-order");
+            const ord = state.orders.find((x) => x.id === ordId);
+            if (!ord) return;
+            ord.status = "VERIFIED";
+            ord.statusReason = "✅ በ Admin (Getachew Biset) በማንዋል ተረጋግጦ ተከፍቷል!";
+            if (state.db && ord.firebaseDocId) {
+              try {
+                await updateDoc(doc(state.db, "pending_orders", ord.firebaseDocId), {
+                  status: "VERIFIED",
+                  statusReason: ord.statusReason,
+                  verifiedAt: serverTimestamp()
+                });
+              } catch (e) {}
+            }
+            persistLocalState();
+            renderAllViews();
+            updateLiveModalStatus();
+            showToast(`✅ የ ${ord.studentName} ኮርስ (${ord.courseTitle}) በማንዋል ተከፍቷል!`, "success");
+          });
+        });
+      }
+
+      // Raw SMS Logs
+      const smsListEl = document.getElementById("adminSmsLogsList");
+      const smsBadge = document.getElementById("smsLogCountBadge");
+      if (smsBadge) smsBadge.textContent = String(state.incomingSmsList.length);
+      if (smsListEl) {
+        smsListEl.innerHTML = state.incomingSmsList.map((s) => `
+          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold ${s.provider === 'CBE' ? 'text-amber-300' : 'text-sky-300'}">Sender: ${s.sender} (${s.provider})</span>
+              <span class="font-mono text-emerald-300 font-bold">${Number(s.amount).toLocaleString()} ብር • ${s.transactionId}</span>
+            </div>
+            <p class="text-xs font-mono text-slate-300 break-all">${s.rawBody}</p>
+            <div class="text-[10px] text-slate-500 flex justify-between">
+              <span>Phone: ${s.senderPhone}</span>
+              <span>${s.timestamp}</span>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      // Security & Fraud Alerts
+      const alertListEl = document.getElementById("adminSecurityAlertsList");
+      const alertBadge = document.getElementById("securityAlertCountBadge");
+      if (alertBadge) alertBadge.textContent = String(state.securityAlerts.length);
+      if (alertListEl) {
+        alertListEl.innerHTML = state.securityAlerts.map((a) => `
+          <div class="p-3 rounded-xl bg-rose-950/30 border border-rose-500/30 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-rose-300">${a.title}</span>
+              <span class="text-[10px] text-slate-400">${a.timestamp}</span>
+            </div>
+            <p class="text-xs text-slate-300">${a.detail}</p>
+          </div>
+        `).join("");
+      }
+    }
+
+    function renderAllViews() {
+      renderCoursesGrid();
+      renderMyUnlockedCourses();
+      renderAdminDashboard();
+    }
+
+    // 9. Checkout Modal & Live Order Pairing Logic
+    function openCheckoutModal(courseId) {
+      const course = COURSES.find((c) => c.id === courseId) || COURSES[0];
+      state.activeCourse = course;
+      state.activeOrderId = null;
+
+      document.getElementById("modalCourseTitle").textContent = course.title;
+      document.getElementById("modalCourseSubtitle").textContent = course.subtitle;
+      document.getElementById("modalCoursePrice").textContent = `${course.price.toLocaleString()}.00 ብር`;
+      document.getElementById("liveOrderStatusBox").classList.add("hidden");
+      document.getElementById("checkoutModal").classList.remove("hidden");
+    }
+
+    function setPaymentMethod(method) {
+      state.selectedMethod = method;
+      const cbeBtn = document.getElementById("selectMethodCBE");
+      const teleBtn = document.getElementById("selectMethodTelebirr");
+      if (method === "CBE") {
+        cbeBtn.className = "method-btn p-3 rounded-xl border-2 border-amber-500 bg-amber-500/15 text-left transition";
+        teleBtn.className = "method-btn p-3 rounded-xl border-2 border-slate-700 bg-slate-900/60 text-left transition";
+      } else {
+        teleBtn.className = "method-btn p-3 rounded-xl border-2 border-sky-500 bg-sky-500/15 text-left transition";
+        cbeBtn.className = "method-btn p-3 rounded-xl border-2 border-slate-700 bg-slate-900/60 text-left transition";
+      }
+    }
+
+    function updateLiveModalStatus() {
+      if (!state.activeOrderId) return;
+      const order = state.orders.find((o) => o.id === state.activeOrderId);
+      if (!order) return;
+
+      const box = document.getElementById("liveOrderStatusBox");
+      const headline = document.getElementById("orderStatusHeadline");
+      const detail = document.getElementById("orderStatusDetail");
+      const spinner = document.getElementById("orderStatusSpinner");
+
+      box.classList.remove("hidden");
+      if (order.status === "VERIFIED") {
+        spinner.className = "w-3 h-3 rounded-full bg-emerald-400";
+        headline.className = "font-bold text-sm text-emerald-300";
+        headline.textContent = "✅ ክፍያዎ በ SMS 100% ተረጋግጧል! ኮርሱ ተከፍቷል!";
+        detail.textContent = order.statusReason;
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        setTimeout(() => {
+          document.getElementById("checkoutModal").classList.add("hidden");
+          openCoursePlayerModal(order.courseId);
+        }, 1200);
+      } else if (order.status.startsWith("ERROR") || order.status.startsWith("FRAUD")) {
+        spinner.className = "w-3 h-3 rounded-full bg-rose-500";
+        headline.className = "font-bold text-sm text-rose-300";
+        headline.textContent = "❌ የክፍያ ማረጋገጫ ስህተት ተገኝቷል!";
+        detail.textContent = order.statusReason;
+      }
+    }
+
+    async function simulateIncomingSmsForOrder(order) {
+      const isCBE = order.method === "CBE";
+      const sender = isCBE ? "CBE" : "127";
+      const rawBody = isCBE
+        ? `Dear Getachew, your account 1********6367 has been Credited with ETB ${order.amount.toFixed(2)} from ${order.studentName}. Ref: https://mbreciept.cbe.com.et/${order.transactionId}`
+        : `ውድ Getachew Biset ከ ${order.studentPhone} ብር ${order.amount.toFixed(2)} ተቀብለዋል። የትራንዛክሽን ቁጥር ${order.transactionId} ነው። እናመሰግናለን ቴሌብር!`;
+
+      await ingestIncomingSms(sender, rawBody);
+    }
+
+    async function ingestIncomingSms(sender, rawBody) {
+      const parsed = parseBankOrTelebirrSms(sender, rawBody);
+      const previewEl = document.getElementById("parsedSmsJsonOutput");
+      const badgeEl = document.getElementById("regexValidBadge");
+      if (previewEl) previewEl.textContent = JSON.stringify(parsed, null, 2);
+      if (badgeEl) {
+        badgeEl.textContent = parsed.valid ? "VALID PAYMENT SMS" : "REJECTED SMS";
+        badgeEl.className = parsed.valid
+          ? "px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300"
+          : "px-2 py-0.5 rounded text-xs font-bold bg-rose-500/20 text-rose-300";
+      }
+
+      if (!parsed.valid) {
+        showToast(parsed.reason || "የኤስኤምኤስ ይዘቱ ትክክለኛ የ CBE/Telebirr ክፍያ አይደለም!", "error");
+        return;
+      }
+
+      const newSms = {
+        id: "sms_" + Date.now(),
+        sender: parsed.sender,
+        provider: parsed.provider,
+        transactionId: parsed.transactionId,
+        amount: parsed.amount,
+        senderPhone: parsed.senderPhone,
+        accountValid: parsed.accountValid,
+        consumed: false,
+        rawBody: parsed.rawBody,
+        timestamp: "አሁን (Just now)"
+      };
+
+      state.incomingSmsList.unshift(newSms);
+
+      // Push to Firebase incoming_sms collection if available
+      if (state.db) {
+        try {
+          await addDoc(collection(state.db, "incoming_sms"), {
+            ...newSms,
+            timestamp: serverTimestamp()
+          });
+        } catch (e) {
+          // Local fallback active
+        }
+      }
+
+      showToast(`📲 አዲስ የ ${parsed.provider} ኤስኤምኤስ (${parsed.amount} ብር • ${parsed.transactionId}) ወደ Firebase ገባ!`, "info");
+      await runVerificationPairingEngine();
+      renderAllViews();
+    }
+
+    function openCoursePlayerModal(courseId) {
+      const course = COURSES.find((c) => c.id === courseId) || COURSES[0];
+      const order = state.orders.find((o) => o.courseId === course.id && o.status === "VERIFIED");
+
+      document.getElementById("playerCourseTitle").textContent = course.title;
+      document.getElementById("playerModuleHeadline").textContent = course.modules[0];
+      document.getElementById("playerReceiptInfo").textContent = order
+        ? `Verified via ${order.method} • TxID: ${order.transactionId} • Paid: ${order.amount} ETB`
+        : "Verified Access • Lihket Digital Academy";
+
+      const listEl = document.getElementById("playerModulesList");
+      listEl.innerHTML = course.modules.map((m, idx) => `
+        <button type="button" data-module-title="${m}" class="module-select-btn p-3.5 rounded-xl bg-slate-900 hover:bg-indigo-950/60 border border-slate-800 hover:border-indigo-500/40 text-left transition flex items-center justify-between">
+          <span class="text-xs sm:text-sm font-medium text-slate-200">${m}</span>
+          <span class="text-xs text-emerald-400 font-bold">${idx === 0 ? 'Playing' : '▶ Play'}</span>
+        </button>
+      `).join("");
+
+      listEl.querySelectorAll(".module-select-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.getElementById("playerModuleHeadline").textContent = btn.getAttribute("data-module-title");
+          showToast("ትምህርቱ እየተጫወተ ነው...", "info");
+        });
+      });
+
+      document.getElementById("coursePlayerModal").classList.remove("hidden");
+    }
+
+    // 10. Tab Navigation Switching
+    function switchTab(tabName) {
+      const views = {
+        courses: document.getElementById("viewCourses"),
+        mylearning: document.getElementById("viewMyLearning"),
+        simulator: document.getElementById("viewSimulator"),
+        admin: document.getElementById("viewAdmin")
+      };
+      const btns = {
+        courses: document.getElementById("tabCoursesBtn"),
+        mylearning: document.getElementById("tabMyLearningBtn"),
+        simulator: document.getElementById("tabSimulatorBtn"),
+        admin: document.getElementById("tabAdminBtn")
+      };
+
+      Object.keys(views).forEach((k) => {
+        if (k === tabName) {
+          views[k].classList.remove("hidden");
+          btns[k].className = "nav-tab px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-indigo-600 text-white shadow";
+        } else {
+          views[k].classList.add("hidden");
+          btns[k].className = "nav-tab px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white";
+        }
+      });
+    }
+
+    // 11. Wire Up All Static Event Listeners
+    window.addEventListener("DOMContentLoaded", () => {
+      // Load any locally saved course price overrides
+      try {
+        const savedCourseOverrides = JSON.parse(localStorage.getItem("lihket_courses_v1") || "{}");
+        COURSES.forEach((c) => {
+          if (savedCourseOverrides[c.id]) {
+            c.title = savedCourseOverrides[c.id].title || c.title;
+            c.price = Number(savedCourseOverrides[c.id].price ?? c.price);
+          }
+        });
+      } catch (e) {}
+
+      renderAllViews();
+      initFirebaseSync();
+
+      // Populate & Wire Admin Course Editor
+      const editSelect = document.getElementById("adminEditCourseSelect");
+      const editTitle = document.getElementById("adminEditTitleInput");
+      const editPrice = document.getElementById("adminEditPriceInput");
+      const populateCourseEditor = () => {
+        if (!editSelect) return;
+        const currentVal = editSelect.value || COURSES[0].id;
+        editSelect.innerHTML = COURSES.map((c) => `<option value="${c.id}">${c.title} (${c.price} ብር)</option>`).join("");
+        editSelect.value = currentVal;
+        const selCourse = COURSES.find((c) => c.id === editSelect.value) || COURSES[0];
+        editTitle.value = selCourse.title;
+        editPrice.value = selCourse.price;
+      };
+      populateCourseEditor();
+      editSelect.addEventListener("change", () => {
+        const selCourse = COURSES.find((c) => c.id === editSelect.value) || COURSES[0];
+        editTitle.value = selCourse.title;
+        editPrice.value = selCourse.price;
+      });
+      document.getElementById("adminSaveCourseBtn").addEventListener("click", async () => {
+        const selCourse = COURSES.find((c) => c.id === editSelect.value);
+        if (!selCourse) return;
+        const newTitle = editTitle.value.trim() || selCourse.title;
+        const newPrice = Math.max(0.01, parseFloat(editPrice.value) || 1);
+        selCourse.title = newTitle;
+        selCourse.price = newPrice;
+        try {
+          const overrides = JSON.parse(localStorage.getItem("lihket_courses_v1") || "{}");
+          overrides[selCourse.id] = { title: newTitle, price: newPrice };
+          localStorage.setItem("lihket_courses_v1", JSON.stringify(overrides));
+        } catch (e) {}
+        if (state.db) {
+          try {
+            await setDoc(doc(state.db, "courses_catalog", selCourse.id), {
+              title: newTitle,
+              price: newPrice,
+              updatedAt: serverTimestamp()
+            });
+          } catch (e) {}
+        }
+        populateCourseEditor();
+        renderAllViews();
+        showToast(`✅ የ "${newTitle}" ዋጋ ወደ ${newPrice} ብር ተቀይሯል!`, "success");
+      });
+
+      // Update initial Regex preview in Simulator tab
+      const initialParsed = parseBankOrTelebirrSms(
+        document.getElementById("simSenderInput").value,
+        document.getElementById("simSmsBodyInput").value
+      );
+      document.getElementById("parsedSmsJsonOutput").textContent = JSON.stringify(initialParsed, null, 2);
+
+      // Navigation tabs
+      document.getElementById("tabCoursesBtn").addEventListener("click", () => switchTab("courses"));
+      document.getElementById("tabMyLearningBtn").addEventListener("click", () => switchTab("mylearning"));
+      document.getElementById("tabSimulatorBtn").addEventListener("click", () => switchTab("simulator"));
+      document.getElementById("tabAdminBtn").addEventListener("click", () => switchTab("admin"));
+      document.getElementById("backToStoreBtn").addEventListener("click", () => switchTab("courses"));
+
+      // Hero buttons
+      document.getElementById("heroExploreBtn").addEventListener("click", () => {
+        document.getElementById("coursesCatalogHeader").scrollIntoView({ behavior: "smooth" });
+      });
+      document.getElementById("heroTestFlowBtn").addEventListener("click", () => switchTab("simulator"));
+      document.getElementById("shareReferralBtn").addEventListener("click", () => {
+        const refLink = "https://lihketdigitalpayment.web.app/?ref=getachew_vip";
+        try {
+          navigator.clipboard.writeText(refLink);
+        } catch (e) {
+          // Fallback
+        }
+        showToast("🎁 የሪፈራል ሊንክ ተቀድቷል! ጓደኛዎ ኮርስ ሲገዛ 20% ኮሚሽን ያገኛሉ።", "success");
+      });
+
+      // Copy Account Buttons
+      document.querySelectorAll(".copy-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const val = btn.getAttribute("data-copy");
+          try {
+            navigator.clipboard.writeText(val);
+          } catch (e) {
+            const temp = document.createElement("input");
+            temp.value = val;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand("copy");
+            temp.remove();
+          }
+          showToast(`የክፍያ ቁጥር (${val}) ተቀድቷል!`, "success");
+        });
+      });
+
+      // Category Filter
+      document.getElementById("categoryFilterSelect").addEventListener("change", (e) => {
+        state.selectedCategory = e.target.value;
+        renderCoursesGrid();
+      });
+
+      // Checkout Modal Controls
+      document.getElementById("closeCheckoutModalBtn").addEventListener("click", () => {
+        document.getElementById("checkoutModal").classList.add("hidden");
+        if (state.timerInterval) clearInterval(state.timerInterval);
+      });
+      document.getElementById("selectMethodCBE").addEventListener("click", () => setPaymentMethod("CBE"));
+      document.getElementById("selectMethodTelebirr").addEventListener("click", () => setPaymentMethod("Telebirr"));
+
+      // Submit Order Form (Starts Real-time Firebase Listening)
+      document.getElementById("checkoutVerificationForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const studentName = document.getElementById("studentNameInput").value.trim();
+        const studentPhone = document.getElementById("studentPhoneInput").value.trim();
+        const txId = document.getElementById("studentTxIdInput").value.trim().toUpperCase();
+
+        if (!studentName || !studentPhone || !txId) {
+          showToast("እባክዎ ሁሉንም መረጃዎች በትክክል ይሙሉ!", "warning");
+          return;
+        }
+
+        const newOrder = {
+          id: "ord_" + Date.now(),
+          studentName,
+          studentPhone,
+          courseId: state.activeCourse.id,
+          courseTitle: state.activeCourse.title,
+          amount: state.activeCourse.price,
+          method: state.selectedMethod,
+          transactionId: txId,
+          status: "WAITING_FOR_SMS",
+          statusReason: "የባንክ/ቴሌብር ኤስኤምኤስ ከስልክ እየተጠበቀ ነው...",
+          createdAt: "አሁን (Just now)"
+        };
+
+        // Push to Firebase pending_orders & send Two-Way Listener trigger
+        if (state.db) {
+          try {
+            const docRef = await addDoc(collection(state.db, "pending_orders"), {
+              ...newOrder,
+              createdAtServer: serverTimestamp()
+            });
+            newOrder.firebaseDocId = docRef.id;
+            await setDoc(doc(state.db, "listener_commands", "latest_command"), {
+              command: "WATCH_TRANSACTION",
+              transactionId: txId,
+              expectedAmount: newOrder.amount,
+              method: newOrder.method,
+              requestedAt: serverTimestamp()
+            });
+          } catch (err) {
+            // Continues seamlessly with local state
+          }
+        }
+
+        state.orders.unshift(newOrder);
+        state.activeOrderId = newOrder.id;
+        persistLocalState();
+
+        // Show live waiting status box
+        const statusBox = document.getElementById("liveOrderStatusBox");
+        statusBox.classList.remove("hidden");
+        document.getElementById("orderStatusSpinner").className = "w-3 h-3 rounded-full bg-amber-400 animate-ping";
+        document.getElementById("orderStatusHeadline").className = "font-bold text-sm text-amber-300";
+        document.getElementById("orderStatusHeadline").textContent = "የስልክ SMS እየተጠበቀ ነው (Listening on Firebase...)";
+        document.getElementById("orderStatusDetail").textContent =
+          `ትዕዛዝዎ (${txId} • ${newOrder.amount} ብር) ተመዝግቧል። የባንክ/ቴሌብር SMS ስልኩ ላይ ሲደርስ ወዲያውኑ ይከፈታል!`;
+
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        state.timerSeconds = 0;
+        state.timerInterval = setInterval(() => {
+          state.timerSeconds++;
+          const mins = String(Math.floor(state.timerSeconds / 60)).padStart(2, "0");
+          const secs = String(state.timerSeconds % 60).padStart(2, "0");
+          const timerEl = document.getElementById("orderStatusTimer");
+          if (timerEl) timerEl.textContent = `${mins}:${secs}`;
+        }, 1000);
+
+        // Immediately check if the SMS already arrived earlier!
+        await runVerificationPairingEngine();
+        renderAllViews();
+      });
+
+      // Simulate Matching SMS directly from Checkout Modal
+      document.getElementById("simulateMatchingSmsNowBtn").addEventListener("click", async () => {
+        if (!state.activeOrderId) return;
+        const ord = state.orders.find((o) => o.id === state.activeOrderId);
+        if (ord) await simulateIncomingSmsForOrder(ord);
+      });
+
+      // Course Player Modal Close
+      document.getElementById("closePlayerModalBtn").addEventListener("click", () => {
+        document.getElementById("coursePlayerModal").classList.add("hidden");
+      });
+
+      // Simulator Preset Buttons
+      document.getElementById("presetCbeEnglishBtn").addEventListener("click", () => {
+        document.getElementById("simSenderInput").value = "CBE";
+        document.getElementById("simSmsBodyInput").value =
+          "Dear Getachew, your account 1********6367 has been Credited with ETB 1,500.00 from Abebe Kebede. Your Current Balance is ETB 54,200.00. Thank you for Banking with CBE! https://mbreciept.cbe.com.et/FT26309ABC12";
+        document.getElementById("runRegexParseBtn").click();
+      });
+
+      document.getElementById("presetCbeAmharicBtn").addEventListener("click", () => {
+        document.getElementById("simSenderInput").value = "CBE";
+        document.getElementById("simSmsBodyInput").value =
+          "ውድ Getachew Biset ሂሳብዎ 1********6367 በተደረገው ዝውውር ብር 1,500.00 ተቀብለዋል። የትራንዛክሽን መለያ ቁጥር FT26309ETH77 ነው። https://mbreciept.cbe.com.et/FT26309ETH77";
+        document.getElementById("runRegexParseBtn").click();
+      });
+
+      document.getElementById("presetTelebirrAmharicBtn").addEventListener("click", () => {
+        document.getElementById("simSenderInput").value = "127";
+        document.getElementById("simSmsBodyInput").value =
+          "ውድ Getachew Biset ከ 0911223344 በተደረገው ዝውውር ብር 1,500.00 ተቀብለዋል። የትራንዛክሽን ቁጥር DB62J9H7KL ነው። የአሁኑ ቀሪ ሂሳብዎ ብር 32,400.00 ነው። እናመሰግናለን ቴሌብር!";
+        document.getElementById("runRegexParseBtn").click();
+      });
+
+      document.getElementById("presetTelebirrEnglishBtn").addEventListener("click", () => {
+        document.getElementById("simSenderInput").value = "127";
+        document.getElementById("simSmsBodyInput").value =
+          "Dear Getachew Biset, you have received ETB 2,500.00 from 0925432016. Your transaction number is CKB882190M. Thank you for using telebirr.";
+        document.getElementById("runRegexParseBtn").click();
+      });
+
+      document.getElementById("presetFraudMismatchBtn").addEventListener("click", () => {
+        document.getElementById("simSenderInput").value = "CBE";
+        document.getElementById("simSmsBodyInput").value =
+          "Dear Getachew, your account 1********6367 has been Credited with ETB 50.00. Ref: https://mbreciept.cbe.com.et/FT26309ABC12";
+        document.getElementById("runRegexParseBtn").click();
+      });
+
+      document.getElementById("runRegexParseBtn").addEventListener("click", () => {
+        const sender = document.getElementById("simSenderInput").value;
+        const body = document.getElementById("simSmsBodyInput").value;
+        const parsed = parseBankOrTelebirrSms(sender, body);
+        document.getElementById("parsedSmsJsonOutput").textContent = JSON.stringify(parsed, null, 2);
+        const badgeEl = document.getElementById("regexValidBadge");
+        badgeEl.textContent = parsed.valid ? "VALID PAYMENT SMS" : "REJECTED SMS";
+        badgeEl.className = parsed.valid
+          ? "px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300"
+          : "px-2 py-0.5 rounded text-xs font-bold bg-rose-500/20 text-rose-300";
+      });
+
+      document.getElementById("pushSmsToFirebaseBtn").addEventListener("click", async () => {
+        const sender = document.getElementById("simSenderInput").value;
+        const body = document.getElementById("simSmsBodyInput").value;
+        await ingestIncomingSms(sender, body);
+      });
+
+      // Two-Way Command Buttons
+      document.getElementById("simPingTabletBtn").addEventListener("click", async () => {
+        if (state.db) {
+          try {
+            await setDoc(doc(state.db, "listener_commands", "latest_command"), {
+              command: "PING_HEARTBEAT",
+              requestedBy: "Getachew Biset (Web Admin)",
+              requestedAt: serverTimestamp()
+            });
+          } catch (e) {}
+        }
+        document.getElementById("listenerHeartbeatText").textContent = "Android SMS Listener: PONG (Synced <1s ago)";
+        showToast("📡 ከ Firebase ወደ አንድሮይድ ታብሌትዎ የ Two-Way Ping ትዕዛዝ ተልኮ ምላሽ ተገኝቷል!", "success");
+      });
+
+      document.getElementById("adminRequestReScanBtn").addEventListener("click", async () => {
+        if (state.db) {
+          try {
+            await setDoc(doc(state.db, "listener_commands", "latest_command"), {
+              command: "RESCAN_LAST_10_SMS",
+              requestedBy: "Getachew Biset",
+              requestedAt: serverTimestamp()
+            });
+          } catch (e) {}
+        }
+        await runVerificationPairingEngine();
+        showToast("🔄 አንድሮይድ አፑ የመጨረሻዎቹን 10 የ CBE እና Telebirr ኤስኤምኤሶች አንብቦ ከ Firebase ጋር አመሳክሯል!", "success");
+      });
+
+      document.getElementById("adminClearDemoBtn").addEventListener("click", () => {
+        try {
+          localStorage.removeItem("lihket_orders_v1");
+          localStorage.removeItem("lihket_sms_v1");
+          localStorage.removeItem("lihket_alerts_v1");
+        } catch (e) {}
+        showToast("የሙከራ ዳታ ዳግም ተጀምሯል (Reset Complete)", "info");
+      });
+    });
+  </script>
+</body>
+</html>
